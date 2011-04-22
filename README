@@ -1,0 +1,50 @@
+HOTS
+====
+
+Setup
+-----
+
+Install mongrel2, zeromq, py-zmq, skytools 3
+
+Testing
+-------
+- Create confdb with sql/apiwrapper.sql
+- Put confdb location into conf/hots-dbsrv.ini
+
+- configure paths in ./startweb.sh
+- launch ./startweb.sh
+- connect with browser to localhost:4080
+
+Current plumbing
+----------------
+
+scripts/tasks:
+- remote-pub / to cc-logging-sub
+- remote-req / to cc-db-req
+
+cc: per-host controller
+- remote-pub / to logsrv-sub
+- remote-req / to dbsrv-rep
+- local-sub / logging proxy
+- local-rep / confdb proxy
+
+logsrv: zmq log destination
+- local-sub / waits for remote log
+- local-pub / log re-publish
+- logdb / db connection to logdb
+
+dbsrv/confdb: zmq <> confdb proxy
+- local-rep / replies for confdb requests
+- confdb / db connection to confdb
+
+mongrel2: http <> zmq proxy
+- local-pub / http req
+- local-sub / http replies
+
+websrv:
+- remote-sub: logsrv-pub
+- remote-req: confdb-rep
+- remote-sub: mongrel-pub
+- remote-pub: mongrel-sub
+
+
