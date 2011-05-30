@@ -23,17 +23,26 @@ class HotsCC(HotsScript):
 
         self.local_logging.setsockopt(zmq.SUBSCRIBE, '')
 
-    def work(self):
-        self.log.info('Starting ioloop')
-        self.ioloop.start()
-        return 1
-
     def handle_log_recv(self, req):
         self.log.info("LOG handle_log_recv: %s" % repr(req))
         self.remote_logging.send_multipart(req)
 
     def handle_confdb_rep(self, msg):
         self.log.info("LOG handle_confdb_rep: %s" % repr(req))
+        # part:
+        # req.confdb
+        # req.ns
+        # req.ns
+        # pub.infofile
+        # pub.
+        route = msg[0].split('.')
+        routelist = []
+        for n in range(1, 1 + len(route)):
+            p = route[ : n]
+            routelist += self.routemap.get(p, [])
+        for tgt in routelist:
+            c = self.get_stream('')
+
 
     def handle_confdb_req(self, msg):
         self.log.info("LOG handle_confdb_req: %s" % repr(req))

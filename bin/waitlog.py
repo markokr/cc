@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-""" HOTS bus - logdb bridge.
+""" dumps log from logserver
 """
 
 import sys
