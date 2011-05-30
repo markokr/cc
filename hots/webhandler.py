@@ -133,6 +133,6 @@ class Connection(object):
 
 class AjaxConnection(Connection):
     def reply_ajax(self, req, data):
-        hdrs = {'Content-Type': 'applicaiton/json'}
+        hdrs = {'Content-Type': 'application/json'}
         self.reply_http(req, json.dumps(data), headers = hdrs)
 
