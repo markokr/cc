@@ -14,20 +14,42 @@ sock_type_map = {
     'rep': zmq.REP,
     'pull': zmq.PULL,
     'push': zmq.PUSH,
-    'xreq': zmq.XREQ,
-    'xrep': zmq.XREP,
+    'pair': zmq.PAIR,
+    'dealer': zmq.XREQ,
+    'router': zmq.XREP,
+
+    # undocumented?
     'xpub': zmq.XPUB,
     'xsub': zmq.XSUB,
+
+    # obsolete
+    'xreq': zmq.XREQ,
+    'xrep': zmq.XREP,
 }
 
 class HotsScriptMethods(object):
     zsocket_cache = None
+    zstream_cache = None
     zctx = None
     zpoller = None
     log = None
     ioloop = None
 
     def get_socket(self, sock_name, default_url=None):
+        """Returns cached zmq.Socket.
+
+        Socket is initialized on first call.
+
+        Socket url is loaded from config value.
+
+        Socket name determines the type and whether to connect
+        or bind it:
+
+          (remote|local)-(sub|pub|pull|push|..)-description
+
+        Eg. 'remote-pub-log' is zmq.PUB socket, and needs .connect().
+        """
+
         # initialize
         if not self.zctx:
             self.zctx = zmq.Context()
@@ -62,26 +84,30 @@ class HotsScriptMethods(object):
         return s
 
     def get_stream(self, sock_name, default_url=None):
+        """Returns cached ZMQStream"""
         if self.ioloop is None:
             self.ioloop = zmq.eventloop.IOLoop.instance()
+        if self.zstream_cache is None:
+            self.zstream_cache = {}
+        if sock_name in self.zstream_cache:
+            return self.zstream_cache[sock_name]
         sock = self.get_socket(sock_name, default_url)
-        return zmq.eventloop.zmqstream.ZMQStream(sock, self.ioloop)
+        stream = zmq.eventloop.zmqstream.ZMQStream(sock, self.ioloop)
+        self.zstream_cache[sock_name] = stream
+        return stream
 
-    def get_poller(self):
-        if self.zsocket_cache is None:
-            self.zsocket_cache = {}
-        if self.zpoller is None:
-            self.zpoller = zmq.Poller()
-            for s in self.zsocket_cache.values():
-                self.zpoller.register(s, zmq.POLLIN)
-        return self.zpoller
+    def work(self):
+        """Default work loop simply runs ioloop."""
+        if self.ioloop is None:
+            raise skytools.UsageError('No sockets registered...')
 
-    def zpoller_register(self, sock_name, handler):
-        pass
+        self.log.info('Starting ioloop')
+        self.ioloop.start()
+        return 1
 
 class HotsScript(HotsScriptMethods, skytools.BaseScript):
-    pass
+    """ZMQ script without db."""
 
 class HotsDBScript(HotsScriptMethods, skytools.DBScript):
-    pass
+    """ZMQ script with db"""
 
