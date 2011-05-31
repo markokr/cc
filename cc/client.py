@@ -12,22 +12,22 @@ def make_stats_msg(sdict):
 def make_infofile_msg(fn):
     mdict = {
         'req': 'pub.infofile',
-        'infofile': os.path.basename(fn)
-        'body': open(fn, 'r').read()
+        'infofile': os.path.basename(fn),
+        'body': open(fn, 'r').read(),
     }
     return [mdict['req'], json.dumps(mdict)]
 
 def make_infofile_msg(fn):
     mdict = {
         'req': 'pub.infofile',
-        'infofile': os.path.basename(fn)
-        'body': open(fn, 'r').read()
+        'infofile': os.path.basename(fn),
+        'body': open(fn, 'r').read(),
     }
     return [mdict['req'], json.dumps(mdict)]
 
 class Client:
     def __init__(self, url):
-        self.sock = zmq.
+        self.sock = zmq
     def send_stats(self, sdict):
         pass
     def send_infofile(self, fn):
@@ -37,5 +37,6 @@ class Client:
     def send_log(self, fn):
         pass
     def query(self, qry):
+        pass
     def query_async(self, qry):
         pass
