@@ -19,12 +19,16 @@ ccserver.py -d conf/cclocal.ini
 echo "starting central cc"
 ccserver.py -d conf/ccserver.ini
 
-echo "starting local task executor"
-cctaskrunner.py -d conf/cctaskrunner.ini
+# echo "starting local task executor"
+# cctaskrunner.py -d conf/cctaskrunner.ini
 
-echo 'sending task'
-testmsg.py task
+# echo 'sending task'
+# testmsg.py task
 
-echo "checking if infofile arrived"
-ls -l var/infofiles
+while [ True ]; do
+    sleep 1
+    echo "checking if infofile arrived"
+    ls var/infofiles
+done
 
+# sh kill.sh
