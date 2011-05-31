@@ -33,6 +33,8 @@ import zmq, zmq.eventloop
 
 import skytools
 
+from zmq.eventloop.ioloop import PeriodicCallback
+
 from cc.message import CCMessage
 from cc.stream import CCStream
 from cc.handlers import cc_handler_lookup
@@ -67,6 +69,9 @@ class CCServer(skytools.BaseScript):
                 self.handlers[hname] = h
             self.add_handler(r, h)
 
+        self.stimer = PeriodicCallback(self.send_stats, 5*1000, self.ioloop)
+        self.stimer.start()
+
     def add_handler(self, rname, handler):
         """Add route to handler"""
         if rname == '*':
@@ -81,12 +86,12 @@ class CCServer(skytools.BaseScript):
         dst = cmsg.get_dest()
         h = self.routes.get(())
         if h:
-            self.log.info('route: %s  pfx=""', repr(dst))
+            self.log.debug('route: %s  pfx=""', repr(dst))
             return h
         route = tuple(dst.split('.'))
         for n in range(1, 1 + len(route)):
             p = route[ : n]
-            self.log.info('route: %s  pfx=%s', repr(dst), repr(p))
+            self.log.debug('route: %s  pfx=%s', repr(dst), repr(p))
             h = self.routes.get(p)
             if h:
                 return h
@@ -94,23 +99,18 @@ class CCServer(skytools.BaseScript):
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
-        self.log.info("LOG handle_cc_recv: %s", repr(zmsg))
         try:
             cmsg = CCMessage(zmsg)
-        except ValueError:
-            self.log.warning('route not configured, dropping')
-            return
-
-        try:
+            self.stat_increase('count')
+            self.stat_increase('bytes', cmsg.get_size())
             h = self.find_handler(cmsg)
             if h:
-                self.log.info('handler=%s', h.hname)
+                self.log.debug('handler=%s', h.hname)
                 h.handle_msg(cmsg)
             else:
-                self.log.info('dropping msg')
+                self.log.warning('dropping msg, no route: %s', repr(zmsg))
         except Exception, d:
-            self.log.exception('handle_cc_recv crashed, droppin msg')
-
+            self.log.exception('handle_cc_recv crashed, dropping msg: %s', repr(zmsg))
 
     def work(self):
         """Default work loop simply runs ioloop."""

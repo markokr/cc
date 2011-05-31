@@ -52,3 +52,8 @@ class CCMessage(object):
             self.parsed = json.loads(js)
         return self.parsed
 
+    def get_size(self):
+        n = 0
+        for p in self.zmsg:
+            n += len(p)
+        return n

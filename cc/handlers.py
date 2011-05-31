@@ -53,6 +53,8 @@ class ProxyHandler(BaseHandler):
 
         self.launch_workers()
 
+        self.stat_increase = ccscript.stat_increase
+
     def launch_workers(self):
         pass
 
@@ -65,8 +67,14 @@ class ProxyHandler(BaseHandler):
 
     def on_recv(self, zmsg):
         """Got message from remote CC, send to client."""
-        self.log.info('handler.on_recv: %s', repr(zmsg))
-        self.cclocal.send_multipart(zmsg)
+        try:
+            self.log.debug('ProxyHandler.handler.on_recv')
+            cmsg = CCMessage(zmsg)
+            self.stat_increase('count')
+            self.stat_increase('bytes', cmsg.get_size())
+            self.cclocal.send_multipart(zmsg)
+        except:
+            self.log.exception('ProxyHandler.on_recv crashed, dropping msg')
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
@@ -77,7 +85,7 @@ class ProxyHandler(BaseHandler):
 #
 
 def db_worker(zctx, worker_url, connstr):
-    """Worker thread, can to blocking calls."""
+    """Worker thread, can do blocking calls."""
     s = zctx.socket(zmq.REP)
     s.connect(worker_url)
     while 1:
@@ -208,7 +216,6 @@ class InfoWriter(BaseHandler):
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
-        self.log.info('InfoWriter.handle_msg: %s', repr(cmsg.zmsg))
         data = cmsg.get_payload()
         fn = os.path.basename(data['filename'])
         fn2 = os.path.join(self.dstdir, fn)
