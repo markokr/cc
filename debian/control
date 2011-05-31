@@ -1,0 +1,12 @@
+Source: cc
+Section: admin
+Priority: extra
+Maintainer: Marko Kreen <marko.kreen@skype.net>
+Build-Depends: cdbs, debhelper (>= 7)
+Standards-Version: 3.8.3
+
+Package: cc
+Architecture: all
+Depends: ${python:Depends}, python-zmq (>= 2.1)
+Description: Command-and-control daemon and library
+ Based on zmq

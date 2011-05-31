@@ -6,3 +6,6 @@ clean:
 	rm -f hots/*.pyc cc/*.pyc
 	rm -f conf/mongrel2.db
 
+deb:
+	debuild -b -us -uc
+
