@@ -15,11 +15,13 @@ It would be preferable to reduce everything to write to socket.
 
 """
 
-import sys, time, json, zmq, os, os.path
+import sys, time, json, zmq, os, os.path, subprocess
 
 from zmq.eventloop.ioloop import PeriodicCallback
 from cc.message import CCMessage
 from cc.stream import CCStream
+
+import skytools
 
 
 __all__ = ['cc_handler_lookup']
@@ -213,14 +215,118 @@ class InfoWriter(BaseHandler):
         super(InfoWriter, self).__init__(hname, hcf, ccscript)
 
         self.dstdir = hcf.getfile('dstdir')
+        self.make_subdirs = hcf.getint('host-subdirs', 0)
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
+
+
         data = cmsg.get_payload()
+        mtime = data['mtime']
+        host = data['hostname']
         fn = os.path.basename(data['filename'])
-        fn2 = os.path.join(self.dstdir, fn)
-        self.log.info('InfoWriter.handle_msg: writing data to %s', fn2)
-        write_atomic(fn2, data['data'])
+        # sanitize
+        host = host.replace('/', '_')
+
+        # decide destination file
+        if self.make_subdirs:
+            subdir = os.path.join(self.dstdir, host)
+            dstfn = os.path.join(subdir, fn)
+            if not os.isdir(subdir):
+                os.mkdir(subdir)
+        else:
+            dstfn = os.path.join(self.dstdir, '%s--%s' % (host, fn))
+
+        # check if file exist and is older
+        try:
+            st = os.stat(dstfn)
+            if st.st_mtime == mtime:
+                self.log.info('InfoWriter.handle_msg: %s mtime matches, skipping', fn2)
+            elif st.st_mtime > mtime:
+                self.log.info('InfoWriter.handle_msg: %s mtime newer, skipping', fn2)
+        except OSError:
+            pass
+
+        # write file, apply original mtime
+        self.log.info('InfoWriter.handle_msg: writing data to %s', dstfn)
+        write_atomic(dstfn, data['data'])
+        os.utime(dstfn, (mtime, mtime))
+
+#
+# JobMgr
+#
+
+class JobState:
+    def __init__(self, jname, jcf):
+        self.jname = jname
+        self.jcf = jcf
+
+class JobMgr(BaseHandler):
+    """Provide config to local daemons / tasks."""
+
+    def __init__(self, hname, hcf, ccscript):
+        super(JobMgr, self).__init__(hname, hcf, ccscript)
+
+        self.jobs = {}
+        for dname in self.cf.getlist('daemons'):
+            self.add_job(dname)
+
+    def add_job(self, jname):
+        jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
+        self.jobs[jname] = JobState(jname, jcf)
+        
+        # unsure about the best way to specify target
+        mod = jcf.get('module', '')
+        script = jcf.get('module', '')
+        cls = jcf.get('class', '')
+        if mod:
+            cmd = ['python', '-m', mod, '-d', '--ccdaemon', jname]
+        elif script:
+            cmd = [script, '-d', '--ccdaemon', jname]
+        else:
+            raise UsageError('dunno how to launch class')
+
+        self.log.info('Launching %s: %s', jname, cmd)
+        p = subprocess.Popen(cmd, close_fds=True,
+                                stdin = open(os.devnull, 'rb'),
+                                stdout = open(os.devnull, 'wb'),
+                                stderr = open(os.devnull, 'wb'))
+
+    def handle_msg(self, cmsg):
+        """Got message from client, send to remote CC"""
+
+        self.log.info('JobMgr req: %s', cmsg)
+        data = cmsg.get_payload()
+
+        res = {'req': data['req']}
+        if data['req'] == 'job.config':
+            # fill defaults
+            job = self.jobs[data['job_name']]
+            cf = {
+                    'job_name': data['job_name'],
+                    'pidfiledir': self.cf.getfile('pidfiledir', '~/pid'),
+                    'pidfile': '%(pidfiledir)s/%(job_name)s.pid',
+            }
+
+            # move config from cc-s .ini file
+            for o in job.jcf.options():
+                cf[o] = job.jcf.get(o)
+            res['config'] = cf
+        else:
+            res['msg'] = 'Unsupported req'
+        ans = cmsg.make_reply(res)
+        self.cclocal.send_cmsg(ans)
+        self.log.info('JobMgr answer: %s', ans)
+
+#
+# local logger
+#
+
+class LocalLogger(BaseHandler):
+    """Log as local log msg."""
+    def handle_msg(self, cmsg):
+        data = cmsg.get_payload()
+        self.log.info('[%s] %s %s', data['job_name'], data['level'], data['msg'])
 
 #
 # name->class lookup
@@ -231,6 +337,8 @@ _handler_lookup = {
     'dbhandler': DBHandler,
     'taskrouter': TaskRouter,
     'infowriter': InfoWriter,
+    'jobmgr': JobMgr,
+    'locallogger': LocalLogger,
 }
 
 def cc_handler_lookup(hname):

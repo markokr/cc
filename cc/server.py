@@ -74,41 +74,34 @@ class CCServer(skytools.BaseScript):
 
     def add_handler(self, rname, handler):
         """Add route to handler"""
-        if rname == '*':
-            r = ()
-        else:
-            r = tuple(rname.split('.'))
-        self.log.info('add_handler: %s -> %s', repr(r), handler.hname)
-        self.routes[r] = handler
 
-    def find_handler(self, cmsg):
-        """"""
-        dst = cmsg.get_dest()
-        h = self.routes.get(())
-        if h:
-            self.log.debug('route: %s  pfx=""', repr(dst))
-            return h
-        route = tuple(dst.split('.'))
-        for n in range(1, 1 + len(route)):
-            p = route[ : n]
-            self.log.debug('route: %s  pfx=%s', repr(dst), repr(p))
-            h = self.routes.get(p)
-            if h:
-                return h
+        r = tuple(rname.split('.'))
+        self.log.info('add_handler: %s -> %s', repr(r), handler.hname)
+        rhandlers = self.routes.setdefault(r, [])
+        rhandlers.append(handler)
 
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
         try:
             cmsg = CCMessage(zmsg)
+            dst = cmsg.get_dest()
+            route = tuple(dst.split('.'))
+
+            # find and run all handlers that match
+            cnt = 0
+            for n in range(1, 1 + len(route)):
+                p = route[ : n]
+                for h in self.routes.get(p, []):
+                    self.log.debug('handler=%s', h.hname)
+                    h.handle_msg(cmsg)
+                    cnt += 1
+            if cnt == 0:
+                self.log.warning('dropping msg, no route: %s', repr(zmsg))
+
+            # update stats
             self.stat_increase('count')
             self.stat_increase('bytes', cmsg.get_size())
-            h = self.find_handler(cmsg)
-            if h:
-                self.log.debug('handler=%s', h.hname)
-                h.handle_msg(cmsg)
-            else:
-                self.log.warning('dropping msg, no route: %s', repr(zmsg))
         except Exception, d:
             self.log.exception('handle_cc_recv crashed, dropping msg: %s', repr(zmsg))
 

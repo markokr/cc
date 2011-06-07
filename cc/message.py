@@ -57,3 +57,15 @@ class CCMessage(object):
         for p in self.zmsg:
             n += len(p)
         return n
+
+    def __str__(self):
+        return 'CCMessage%s' % repr(self.zmsg)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def make_reply(self, rep):
+        req = rep['req'].encode('utf8')
+        zmsg = self.get_route() + ['', req, json.dumps(rep), '']
+        return CCMessage(zmsg)
+

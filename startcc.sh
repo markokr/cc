@@ -10,9 +10,6 @@ export PYTHONPATH
 
 mkdir -p var/log var/run var/infofiles
 
-echo "starting infofile collector"
-infosender.py -d conf/infosender.ini
-
 echo "starting local cc"
 ccserver.py -d conf/cclocal.ini
 

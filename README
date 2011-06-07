@@ -1,50 +1,117 @@
-HOTS
-====
+CC
+==
 
-Setup
------
+CC is ZMQ proxy for specific type of ZMQ messaages (CC messages).
 
-Install mongrel2, zeromq, py-zmq, skytools 3
+It listens on single ZMQ socket, and processes messages
+by matching message type to handler.
 
-Testing
--------
-- Create confdb with sql/apiwrapper.sql
-- Put confdb location into conf/hots-dbsrv.ini
+It also has optional 
 
-- configure paths in ./startweb.sh
-- launch ./startweb.sh
-- connect with browser to localhost:4080
 
-Current plumbing
-----------------
 
-scripts/tasks:
-- remote-pub / to cc-logging-sub
-- remote-req / to cc-db-req
+CC message
+----------
 
-cc: per-host controller
-- remote-pub / to logsrv-sub
-- remote-req / to dbsrv-rep
-- local-sub / logging proxy
-- local-rep / confdb proxy
+First quick intro to ZMQ messages: ZMQ messages can contain
+multiple blobs, each one prefixed by length and flag whether
+its last fragment for single logical message.
 
-logsrv: zmq log destination
-- local-sub / waits for remote log
-- local-pub / log re-publish
-- logdb / db connection to logdb
+Simple ZMQ request-reply pattern, implemented by zmq.REP, zmq.XREP
+sockets, is to add additional blob at the start of the message
+on each hop, which contains socket id from where the message
+came from.  So on reply the message can be routed by over several
+hops, each one removes the socket id when it send it further.
 
-dbsrv/confdb: zmq <> confdb proxy
-- local-rep / replies for confdb requests
-- confdb / db connection to confdb
+Empty part ('') separates such socket ids from actual body parts.
 
-mongrel2: http <> zmq proxy
-- local-pub / http req
-- local-sub / http replies
+CC messages uses such routing, additionally it specifies meaning
+to body parts:
 
-websrv:
-- remote-sub: logsrv-pub
-- remote-req: confdb-rep
-- remote-sub: mongrel-pub
-- remote-pub: mongrel-sub
+0 - message type
+1 - body (json)
+2 - signature
+
+The message type is contained also in json, it is separated
+out to make routing easier.
+
+Message types
+-------------
+
+
+
+CC handlers
+-----------
+
+Handler is a Python class that is registered for a message type pattern.
+
+Examples:
+
+proxy: sends message to another CC instance
+dbhandler: launches db function with message
+taskrouter: keeps track of routes to task executors
+infowriter: writes infofiles
+logwriter: writes logfiles
+jobmgr: local jobs [daemons / tasks] query it for config and keepalive
+
+CC daemons
+----------
+
+These are daemons that are launched and managed by CC.
+They act as ordinary clients, except they are configured
+from CC config, instead of separate standalone scripts.
+
+Examples:
+
+- infosender: reads info files, sends them to CC
+- taskexec: registers on taskrouter, waits for tasks
+- discovery: discovers things
+
+Patterns
+--------
+
+Nether handlers nor daemons need to be tied/managed by CC,
+they can always be launched as standalone services.
+They are managed with CC only for easier administration.
+
+That also means there are few daemon/handler combinations
+that make sense, and others that don't.
+
+Good patterns:
+
+- Local CC:
+  - listens on localhost
+  - daemons: taskexec, infosender, ...
+  - handlers: jobmgr, proxy
+
+- Proxy:
+  - listens network
+  - daemons: -
+  - handlers: proxy
+
+- End-service
+  - listens network
+  - daemons: -
+  - handlers: dbservice / logwriter / infowriter
+
+Bad pattern:
+
+  - local daemons on public service
+
+
+TODO
+----
+
+- inforeceiver: check mtime
+- jobmgr: track keepalive, relaunch if dead?
+- dbservice: multi-thread / multi-process connection handling
+- ccjob: implement task logic (just job_name picking?)
+- taskexec: implement
+- logwriter: implement
+
+- api: refactor zmq script w/ ioloop out
+- api: common zmq socket tuning
+- api: CCMessage per-type helpers
+- api: rename 'req'.  (mtype, dest, type, target?)
 
 
