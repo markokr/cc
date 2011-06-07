@@ -2,14 +2,20 @@
 
 from distutils.core import setup
 
+ln = open('debian/changelog', 'r').readline()
+ver = ln[ ln.index('(')+1 : ln.index(')') ]
+
 setup(
     name = "cc",
-    version = '0.1',
+    version = ver,
     maintainer = "Marko Kreen",
     maintainer_email = "marko.kreen@skype.net",
     packages = ['cc'],
     scripts = [
         'bin/ccserver.py',
+    ],
+    data_files = [
+        ('share/doc/cc', ['conf/cclocal.ini', 'conf/ccserver.ini']),
     ],
 )
 
