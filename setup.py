@@ -7,11 +7,9 @@ setup(
     version = '0.1',
     maintainer = "Marko Kreen",
     maintainer_email = "marko.kreen@skype.net",
-    packages = ['cc', 'hots'],
+    packages = ['cc'],
     scripts = [
         'bin/ccserver.py',
-        'bin/cctaskrunner.py',
-        'bin/infosender.py',
     ],
 )
 
