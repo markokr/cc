@@ -54,7 +54,7 @@ class InfofileCollector(CCJob):
             if len(body) != st.st_size:
                 return
             fs.modified = 0
-            self.log.info('Sending: %s', fs.filename)
+            self.log.debug('Sending: %s', fs.filename)
             self.send_file(fs, body)
             self.stat_inc('count')
         f.close()

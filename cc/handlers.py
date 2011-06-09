@@ -220,7 +220,6 @@ class InfoWriter(BaseHandler):
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
 
-
         data = cmsg.get_payload()
         mtime = data['mtime']
         host = data['hostname']
@@ -232,7 +231,7 @@ class InfoWriter(BaseHandler):
         if self.make_subdirs:
             subdir = os.path.join(self.dstdir, host)
             dstfn = os.path.join(subdir, fn)
-            if not os.isdir(subdir):
+            if not os.path.isdir(subdir):
                 os.mkdir(subdir)
         else:
             dstfn = os.path.join(self.dstdir, '%s--%s' % (host, fn))
@@ -248,7 +247,7 @@ class InfoWriter(BaseHandler):
             pass
 
         # write file, apply original mtime
-        self.log.info('InfoWriter.handle_msg: writing data to %s', dstfn)
+        self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)
         write_atomic(dstfn, data['data'])
         os.utime(dstfn, (mtime, mtime))
 
