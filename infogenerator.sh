@@ -1,6 +1,8 @@
-#! /bin/sh
+#! /bin/bash
 
 set -e
+
+while true; do
 
 COUNTER=0
 while [  $COUNTER -lt 1000 ]; do
@@ -155,5 +157,8 @@ while [  $COUNTER -lt 1000 ]; do
 
     Sed magna libero, imperdiet in convallis vitae, laoreet ut neque. Fusce ultrices dui ut neque venenatis dictum. Sed fermentum ipsum vel odio ultricies et porttitor felis tincidunt. Etiam quis tortor enim, ac aliquam leo. Suspendisse potenti. Phasellus non lacus eget arcu fermentum lacinia ut et leo. Pellentesque nec ipsum est. Nulla id magna tellus, ut vestibulum eros. Integer eu tellus nulla. Vestibulum ullamcorper euismod felis sed suscipit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget velit dolor, a ultricies arcu. Suspendisse mi lacus, fringilla quis pharetra id, bibendum at enim. Quisque dapibus pretium quam a blandit. Vestibulum pulvinar tempus libero, sit amet egestas sem convallis placerat. Ut nec nibh in velit euismod tincidunt quis sollicitudin orci. Nam lacus eros, viverra sit amet laoreet non, porta quis sapien. Maecenas id elit in augue accumsan amet." > infodir/info.$COUNTER
     let COUNTER=COUNTER+1
-    sleep 0.3
 done
+
+sleep 0.3
+done
+
