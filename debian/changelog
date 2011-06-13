@@ -1,3 +1,11 @@
+cc (0.3) unstable; urgency=low
+
+  * v0.3
+  * Merge EgonV's JSON struct
+  * JSON on python2.5
+
+ -- Marko Kreen <marko.kreen@skype.net>  Mon, 13 Jun 2011 13:07:56 +0300
+
 cc (0.2) unstable; urgency=low
 
   * Daemon support
