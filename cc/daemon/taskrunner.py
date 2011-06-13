@@ -1,16 +1,16 @@
 #! /usr/bin/env python
 
-import sys, time
-import zmq, zmq.eventloop
+"""Keeps track of ZMQ router for task runners.
+"""
 
+import sys
+import zmq, zmq.eventloop
 from zmq.eventloop.ioloop import PeriodicCallback
 
-import skytools
-
 from cc import json
-from cc.message import CCMessage
 from cc.stream import CCStream
-from cc.handlers import cc_handler_lookup
+
+import skytools
 
 class TaskRunner(skytools.BaseScript):
     """Register as handler for host.
@@ -55,6 +55,6 @@ class TaskRunner(skytools.BaseScript):
         self.cc.send_multipart(zmsg)
 
 if __name__ == '__main__':
-    s = TaskRunner('cctaskrunner', sys.argv[1:])
-    s.start()
+    script = TaskRunner('cctaskrunner', sys.argv[1:])
+    script.start()
 

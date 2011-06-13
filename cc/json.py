@@ -140,8 +140,8 @@ if hasattr(json, 'dumps'):
     dumps = json.dumps
     loads = json.loads
 else:
-    dumps = json.write
-    loads = json.read
+    dumps = getattr(json, 'write')
+    loads = getattr(json, 'read')
 
 
 #===============================================================================

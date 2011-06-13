@@ -38,6 +38,10 @@ out to make routing easier.
 Message types
 -------------
 
+- pub.infofile, pub.state, pub.stats
+- log.info, log.error, ...
+- job.*
+- req.* ??
 
 
 CC handlers

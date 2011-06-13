@@ -7,11 +7,10 @@ import sys
 import glob
 import stat
 import os, os.path
-import time
 import socket
 
 from cc import json
-from cc.job import CCJob
+from cc.daemon import CCDaemon
 
 class InfoStamp:
     def __init__(self, fn, st):
@@ -33,7 +32,7 @@ class InfoStamp:
         else:
             return 0
 
-class InfofileCollector(CCJob):
+class InfofileCollector(CCDaemon):
 
     def reload(self):
         super(InfofileCollector, self).reload()

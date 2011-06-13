@@ -3,19 +3,18 @@
 CC daemon / task
 """
 
-import sys, os, signal, optparse, time, errno, select
-import logging, logging.handlers, logging.config
-
-import skytools
-import skytools.skylog
-
+import logging
 import zmq
 
 from cc import json
 from cc.message import CCMessage
-from cc.stream import CCStream
+
+import skytools
+
+__all__ = ['CCJob', 'CCDaemon', 'CCTask']
 
 class CallbackLogger(logging.Handler):
+    """Call a function on log event."""
     def __init__(self, cbfunc):
         logging.Handler.__init__(self)
         self.log_cb = cbfunc
@@ -86,7 +85,8 @@ class CCJob(skytools.BaseScript):
         #self.log.debug('got config: %s', cmsg)
         conf = cmsg.get_payload()['config']
 
-        return skytools.Config(self.service_name, None, user_defs = conf, override = self.cf_operride)
+        return skytools.Config(self.service_name, None, user_defs = conf,
+                               override = self.cf_operride)
 
     def _boot_daemon(self):
         self.close_cc()

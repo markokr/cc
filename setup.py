@@ -10,7 +10,7 @@ setup(
     version = ver,
     maintainer = "Marko Kreen",
     maintainer_email = "marko.kreen@skype.net",
-    packages = ['cc'],
+    packages = ['cc', 'cc.handler', 'cc.daemon'],
     scripts = [
         'bin/ccserver.py',
     ],

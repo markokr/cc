@@ -28,17 +28,16 @@ Config::
 """
 
 
-import sys, time
+import sys
 import zmq, zmq.eventloop
 
 import skytools
 
 from zmq.eventloop.ioloop import PeriodicCallback
 
-from cc import json
 from cc.message import CCMessage
 from cc.stream import CCStream
-from cc.handlers import cc_handler_lookup
+from cc.handler import cc_handler_lookup
 
 class CCServer(skytools.BaseScript):
 
@@ -48,9 +47,11 @@ class CCServer(skytools.BaseScript):
         self.zctx = zmq.Context()
         self.ioloop = zmq.eventloop.IOLoop.instance()
 
+        self.local_url = self.cf.get('cc-socket')
+
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
-        s.bind(self.cf.get('cc-socket'))
+        s.bind(self.local_url)
         s.setsockopt(zmq.LINGER, 500)
         self.local = CCStream(s, self.ioloop)
         self.local.on_recv(self.handle_cc_recv)
@@ -103,7 +104,7 @@ class CCServer(skytools.BaseScript):
             # update stats
             self.stat_increase('count')
             self.stat_increase('bytes', cmsg.get_size())
-        except Exception, d:
+        except Exception:
             self.log.exception('handle_cc_recv crashed, dropping msg: %s', repr(zmsg))
 
     def work(self):
@@ -114,6 +115,6 @@ class CCServer(skytools.BaseScript):
 
 
 if __name__ == '__main__':
-    s = CCServer('ccserver', sys.argv[1:])
-    s.start()
+    script = CCServer('ccserver', sys.argv[1:])
+    script.start()
 
