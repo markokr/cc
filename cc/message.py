@@ -1,5 +1,5 @@
 
-import json
+from cc import json
 
 __all__ = ['CCMessage']
 

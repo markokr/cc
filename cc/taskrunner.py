@@ -1,13 +1,13 @@
 #! /usr/bin/env python
 
-
-import sys, time, json
+import sys, time
 import zmq, zmq.eventloop
 
 from zmq.eventloop.ioloop import PeriodicCallback
 
 import skytools
 
+from cc import json
 from cc.message import CCMessage
 from cc.stream import CCStream
 from cc.handlers import cc_handler_lookup

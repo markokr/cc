@@ -28,13 +28,14 @@ Config::
 """
 
 
-import sys, time, json
+import sys, time
 import zmq, zmq.eventloop
 
 import skytools
 
 from zmq.eventloop.ioloop import PeriodicCallback
 
+from cc import json
 from cc.message import CCMessage
 from cc.stream import CCStream
 from cc.handlers import cc_handler_lookup

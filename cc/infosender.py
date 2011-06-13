@@ -7,10 +7,10 @@ import sys
 import glob
 import stat
 import os, os.path
-import json
 import time
 import socket
 
+from cc import json
 from cc.job import CCJob
 
 class InfoStamp:

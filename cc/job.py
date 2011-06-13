@@ -10,8 +10,8 @@ import skytools
 import skytools.skylog
 
 import zmq
-import json
 
+from cc import json
 from cc.message import CCMessage
 from cc.stream import CCStream
 
