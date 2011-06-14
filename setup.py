@@ -17,10 +17,10 @@ setup(
     data_files = [
         ('share/doc/cc', [
             'conf/cclocal.ini',
-            'conf/ccproxy.ini'
-            'conf/ccserver-info.ini'
-            'conf/ccserver-log.ini'
-            'conf/ccserver-tasks.ini'
+            'conf/ccproxy.ini',
+            'conf/ccserver-info.ini',
+            'conf/ccserver-log.ini',
+            'conf/ccserver-tasks.ini',
         ]),
     ],
 )
