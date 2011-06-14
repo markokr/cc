@@ -1,5 +1,5 @@
 
-import os, subprocess, select, fcntl
+import os, subprocess, select, fcntl, signal
 
 from zmq.eventloop.ioloop import PeriodicCallback
 from cc.handler import CCHandler
@@ -101,6 +101,13 @@ class JobState:
         self.timer = PeriodicCallback(self.handle_timer, 2*1000, self.ioloop)
         self.timer.start()
 
+    def stop(self):
+        try:
+            self.log.info('Killing %s', self.jname)
+            skytools.signal_pidfile(self.pidfile, signal.SIGINT)
+        except:
+            self.log.exception('signal_pidfile failed')
+
 class JobMgr(CCHandler):
     """Provide config to local daemons / tasks."""
 
@@ -135,4 +142,8 @@ class JobMgr(CCHandler):
         ans = cmsg.make_reply(res)
         self.cclocal.send_cmsg(ans)
         self.log.info('JobMgr answer: %s', ans)
+
+    def stop(self):
+        for j in self.jobs.values():
+            j.stop()
 

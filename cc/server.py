@@ -40,8 +40,11 @@ from cc.stream import CCStream
 from cc.handler import cc_handler_lookup
 
 class CCServer(skytools.BaseScript):
+    """Listens on single ZMQ sockets, dispatches messages to handlers."""
 
     def startup(self):
+        """Setup sockets and handlers."""
+
         super(CCServer, self).startup()
 
         self.zctx = zmq.Context()
@@ -65,7 +68,12 @@ class CCServer(skytools.BaseScript):
             else:
                 self.log.info('New handler: %s/%s', r, hname)
                 hcf = self.cf.clone(hname)
-                htype = hcf.get('plugin')
+
+                # renamed option: plugin->handler
+                htype = hcf.get('plugin', '?')
+                if htype == '?':
+                    htype = hcf.get('handler')
+
                 cls = cc_handler_lookup(htype)
                 h = cls(hname, hcf, self)
                 self.handlers[hname] = h
@@ -109,9 +117,16 @@ class CCServer(skytools.BaseScript):
 
     def work(self):
         """Default work loop simply runs ioloop."""
+        self.set_single_loop(1)
         self.log.info('Starting ioloop')
         self.ioloop.start()
-        return 1
+
+        for h in self.handlers.values():
+            h.stop()
+
+    def stop(self):
+        super(CCServer, self).stop()
+        self.ioloop.stop()
 
 
 if __name__ == '__main__':

@@ -37,6 +37,10 @@ class CCHandler(object):
         """Process single message"""
         pass
 
+    def stop(self):
+        """Called on process shutdown."""
+        pass
+
 #
 # Handler lookup
 #
