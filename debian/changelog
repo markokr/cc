@@ -1,3 +1,19 @@
+cc (0.4) unstable; urgency=low
+
+  * Add debian/pyversions, needed for lenny
+  * reorg: split handlers & daemons to subdirs
+  * debian: add more deps
+  * jobmgr: collect daemon output during startup
+  * cc.reqs: templates for various messages
+  * add config for pylint
+  * require python >= 2.5
+  * cc: kill subdaemons on shutdown
+  * jobmgr: info->debug
+  * CCServer: catch EINTR exception, move handler .stop() to main .stop()
+  * More example configs
+
+ -- Marko Kreen <marko.kreen@skype.net>  Tue, 14 Jun 2011 17:01:54 +0300
+
 cc (0.3) unstable; urgency=low
 
   * v0.3
