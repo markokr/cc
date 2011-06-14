@@ -72,7 +72,7 @@ class JobState:
             # daemonization successful?
             live = skytools.signal_pidfile(self.pidfile, 0)
             if live:
-                self.log.info('handle_timer: %s is alive', self.jname)
+                self.log.debug('handle_timer: %s is alive', self.jname)
             else:
                 self.log.info('handle_timer: %s is dead', self.jname)
 
