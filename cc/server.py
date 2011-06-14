@@ -28,7 +28,7 @@ Config::
 """
 
 
-import sys
+import sys, errno
 import zmq, zmq.eventloop
 
 import skytools
@@ -119,15 +119,21 @@ class CCServer(skytools.BaseScript):
         """Default work loop simply runs ioloop."""
         self.set_single_loop(1)
         self.log.info('Starting ioloop')
-        self.ioloop.start()
-
-        for h in self.handlers.values():
-            h.stop()
+        try:
+            self.ioloop.start()
+        except zmq.ZMQError, d:
+            # ZMQ gets surprised by EINTR
+            if d.errno == errno.EINTR:
+                return 1
 
     def stop(self):
+        """Called from signal handler"""
         super(CCServer, self).stop()
         self.ioloop.stop()
 
+        # FIXME: this should be done outside signal handler
+        for h in self.handlers.values():
+            h.stop()
 
 if __name__ == '__main__':
     script = CCServer('ccserver', sys.argv[1:])
