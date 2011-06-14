@@ -15,7 +15,13 @@ setup(
         'bin/ccserver.py',
     ],
     data_files = [
-        ('share/doc/cc', ['conf/cclocal.ini', 'conf/ccserver.ini']),
+        ('share/doc/cc', [
+            'conf/cclocal.ini',
+            'conf/ccproxy.ini'
+            'conf/ccserver-info.ini'
+            'conf/ccserver-log.ini'
+            'conf/ccserver-tasks.ini'
+        ]),
     ],
 )
 

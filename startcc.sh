@@ -2,22 +2,19 @@
 
 set -e
 
-PATH=`pwd`/bin:/opt/apps/mongrel/bin:$PATH
-export PATH
+#PATH=`pwd`/bin:$PATH
+#export PATH
 
-PYTHONPATH=`pwd`:$PYTHONPATH
-export PYTHONPATH
+#PYTHONPATH=`pwd`:$PYTHONPATH
+#export PYTHONPATH
 
-mkdir -p var/log var/run var/infofiles
+mkdir -p ~/log ~/pid
+mkdir -p /tmp/infofiles
 
-echo "starting local cc"
-ccserver.py -d conf/cclocal.ini
-
-echo "starting central cc"
-ccserver.py -d conf/ccserver.ini
-
-# echo "starting local task executor"
-# cctaskrunner.py -d conf/cctaskrunner.ini
+for ini in conf/*.ini; do
+  echo "starting $ini"
+  python -m cc.server -d $ini
+done
 
 # echo 'sending task'
 # testmsg.py task
@@ -25,7 +22,7 @@ ccserver.py -d conf/ccserver.ini
 while [ True ]; do
     sleep 1
     echo "checking if infofile arrived"
-    ls var/infofiles
+    ls /tmp/infofiles
 done
 
 # sh kill.sh
