@@ -3,6 +3,7 @@ import os, subprocess, select, fcntl, signal
 
 from zmq.eventloop.ioloop import PeriodicCallback
 from cc.handler import CCHandler
+from cc.util import set_nonblocking
 
 import skytools
 
@@ -10,38 +11,12 @@ __all__ = ['JobMgr']
 
 CC_HANDLER = 'JobMgr'
 
-def set_nonblocking(fd, onoff):
-    """Toggle the O_NONBLOCK flag.
-    If onoff==None then return current setting.
-    """
-    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    if onoff is None:
-        return (flags & os.O_NONBLOCK) > 0
-    if onoff:
-        flags |= os.O_NONBLOCK
-    else:
-        flags &= ~os.O_NONBLOCK
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
-
-def set_cloexec(fd, onoff):
-    """Toggle the FD_CLOEXEC flag.
-    If onoff==None then return current setting.
-    """
-    flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-    if onoff is None:
-        return (flags & fcntl.FD_CLOEXEC) > 0
-    if onoff:
-        flags |= fcntl.FD_CLOEXEC
-    else:
-        flags &= ~fcntl.FD_CLOEXEC
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
-
 #
 # JobMgr
 #
 
 class JobState:
-    def __init__(self, jname, jcf, log, cc_url, ioloop):
+    def __init__(self, jname, jcf, log, cc_url, ioloop, pidfiledir):
         self.jname = jname
         self.jcf = jcf
         self.proc = None
@@ -49,7 +24,6 @@ class JobState:
         self.cc_url = cc_url
         self.timer = None
         self.ioloop = ioloop
-        pidfiledir = self.jcf.getfile('pidfiledir', '~/pid')
         self.pidfile = "%s/%s.pid" % (pidfiledir, self.jname)
         self.cfdict = {
                 'job_name': self.jname,
@@ -115,6 +89,7 @@ class JobMgr(CCHandler):
         super(JobMgr, self).__init__(hname, hcf, ccscript)
 
         self.local_url = ccscript.local_url
+        self.pidfiledir = hcf.getfile('pidfiledir', '~/pid')
 
         self.jobs = {}
         for dname in self.cf.getlist('daemons'):
@@ -122,7 +97,7 @@ class JobMgr(CCHandler):
 
     def add_job(self, jname):
         jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
-        jstate = JobState(jname, jcf, self.log, self.local_url, self.ioloop)
+        jstate = JobState(jname, jcf, self.log, self.local_url, self.ioloop, self.pidfiledir)
         self.jobs[jname] = jstate
         jstate.start()
         
