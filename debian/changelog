@@ -1,3 +1,12 @@
+cc (0.4.1) unstable; urgency=low
+
+  * jobmgr: fix pidfiledir
+  * infowriter: bakext option, when set old infofile is backed up
+  * cc.json: better py2.5 compat
+  * cc.util: new module for low-level functions
+
+ -- Marko Kreen <marko.kreen@skype.net>  Wed, 15 Jun 2011 16:26:13 +0300
+
 cc (0.4) unstable; urgency=low
 
   * Add debian/pyversions, needed for lenny
