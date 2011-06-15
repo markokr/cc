@@ -129,17 +129,22 @@ __all__ = ['loads', 'dumps', 'Struct', 'build_struct', 'Field', 'list_of']
 # Portable JSON import
 #===============================================================================
 
+import sys
+
 # python2.5 'json' is crap, try simplejson first
 try:
     import simplejson as json
 except ImportError:
-    import json
+    # python tries to do relative import first, work around it
+    import sys
+    __import__('json', level=0)
+    json = sys.modules['json']
 
-# try to survive 2.5-json
 if hasattr(json, 'dumps'):
     dumps = json.dumps
     loads = json.loads
 else:
+    # python2.5-json
     dumps = getattr(json, 'write')
     loads = getattr(json, 'read')
 
@@ -353,4 +358,4 @@ if __name__ == '__main__':
     import doctest
     doctest.testmod()    
     func_call_example()
-        
+
