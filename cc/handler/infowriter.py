@@ -1,6 +1,7 @@
-import os, os.path
+import os, os.path, errno
 
 from cc.handler import CCHandler
+from cc.util import write_atomic
 
 __all__ = ['InfoWriter']
 
@@ -10,14 +11,6 @@ CC_HANDLER = 'InfoWriter'
 # infofile writer
 #
 
-def write_atomic(fn, data):
-    """Write with rename."""
-    fn2 = fn + '.new'
-    f = open(fn2, 'w')
-    f.write(data)
-    f.close()
-    os.rename(fn2, fn)
-
 class InfoWriter(CCHandler):
     """Simply writes to files."""
     def __init__(self, hname, hcf, ccscript):
@@ -25,6 +18,7 @@ class InfoWriter(CCHandler):
 
         self.dstdir = hcf.getfile('dstdir')
         self.make_subdirs = hcf.getint('host-subdirs', 0)
+        self.bakext = hcf.get('bakext', '')
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
@@ -57,6 +51,6 @@ class InfoWriter(CCHandler):
 
         # write file, apply original mtime
         self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)
-        write_atomic(dstfn, data['data'])
+        write_atomic(dstfn, data['data'], self.bakext)
         os.utime(dstfn, (mtime, mtime))
 
