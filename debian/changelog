@@ -1,3 +1,15 @@
+cc (0.4.2) unstable; urgency=low
+
+  * cc.util: dont prefix tmp file with '.'
+  * cc.json: avoid extra kwargs to json.dumps
+  * Use templates from cc.reqs
+  * cc.reqs: add hostname to all messages
+  * cc.server: re-raise ZMQ exception if not EINTR
+  * ccserver: cc-role = local|remote
+  * README update
+
+ -- Marko Kreen <marko.kreen@skype.net>  Thu, 16 Jun 2011 15:44:43 +0300
+
 cc (0.4.1) unstable; urgency=low
 
   * jobmgr: fix pidfiledir
