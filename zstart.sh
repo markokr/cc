@@ -23,6 +23,7 @@ while [ True ]; do
     sleep 1
     echo "checking if infofile arrived"
     ls /tmp/infofiles/*
+    grep -E 'ERR|WARN|CRIT|Exc' /home/marko/log/*.log || true
 done
 
 # sh kill.sh
