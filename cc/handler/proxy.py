@@ -15,6 +15,9 @@ CC_HANDLER = 'ProxyHandler'
 
 class ProxyHandler(CCHandler):
     """Simply proxies further"""
+
+    CC_ROLES = ['local', 'remote']
+
     def __init__(self, hname, hcf, ccscript):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)
 

@@ -13,6 +13,9 @@ CC_HANDLER = 'InfoWriter'
 
 class InfoWriter(CCHandler):
     """Simply writes to files."""
+
+    CC_ROLES = ['remote']
+
     def __init__(self, hname, hcf, ccscript):
         super(InfoWriter, self).__init__(hname, hcf, ccscript)
 

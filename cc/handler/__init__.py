@@ -54,10 +54,14 @@ _short_names = {
     'locallogger': 'cc.handler.locallogger',
 }
 
-def cc_handler_lookup(name):
+def cc_handler_lookup(name, cur_role):
     name = _short_names.get(name, name)
     __import__(name)
     m = sys.modules[name]
-    cname = getattr(m, 'CC_HANDLER')
-    return getattr(m, cname)
+    cls = getattr(m, m.CC_HANDLER)
+    if cur_role == 'insecure':
+        return cls
+    if cur_role not in cls.CC_ROLES:
+        raise Exception('Handler %s cannot be run in role %s' % (name, cur_role))
+    return cls
 

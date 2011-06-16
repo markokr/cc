@@ -30,6 +30,9 @@ class TaskRouter(CCHandler):
     
     Clean old ones.
     """
+
+    CC_ROLES = ['remote']
+
     def __init__(self, *args):
         super(TaskRouter, self).__init__(*args)
         self.route_map = {}

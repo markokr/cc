@@ -87,6 +87,8 @@ class JobState:
 class JobMgr(CCHandler):
     """Provide config to local daemons / tasks."""
 
+    CC_ROLES = ['local']
+
     def __init__(self, hname, hcf, ccscript):
         super(JobMgr, self).__init__(hname, hcf, ccscript)
 

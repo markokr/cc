@@ -52,6 +52,11 @@ class CCServer(skytools.BaseScript):
 
         self.local_url = self.cf.get('cc-socket')
 
+        self.cur_role = self.cf.get('cc-role', 'insecure')
+
+        if self.cur_role == 'insecure':
+            self.log.warning('CC is running in insecure mode, please add "cc-role = local" or "cc-role = remote" option to config')
+
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
         s.bind(self.local_url)
@@ -74,7 +79,7 @@ class CCServer(skytools.BaseScript):
                 if htype == '?':
                     htype = hcf.get('handler')
 
-                cls = cc_handler_lookup(htype)
+                cls = cc_handler_lookup(htype, self.cur_role)
                 h = cls(hname, hcf, self)
                 self.handlers[hname] = h
             self.add_handler(r, h)

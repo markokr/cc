@@ -25,6 +25,9 @@ def db_worker(zctx, worker_url, connstr):
 
 class DBHandler(ProxyHandler):
     """Send request to workers."""
+
+    CC_ROLES = ['remote']
+
     def make_socket(self):
         baseurl = 'tcp://127.0.0.1'
         s = self.zctx.socket(zmq.XREQ)
