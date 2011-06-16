@@ -1,11 +1,13 @@
 import time
 from cc.json import Struct, Field
 from cc.message import CCMessage
+from socket import gethostname
 
 __all__ = ['LogMessage', 'InfofileMessage', 'JobRequestMessage', 'JobConfigReplyMessage', 'TaskRegisterMessage', 'TaskSendMessage']
 
 class BaseMessage(Struct):
     req = Field(str)
+    hostname = Field(str, default = gethostname())
 
     def send_to(self, sock):
         cmsg = CCMessage(jmsg = self)
