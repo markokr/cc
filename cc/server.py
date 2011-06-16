@@ -125,6 +125,7 @@ class CCServer(skytools.BaseScript):
             # ZMQ gets surprised by EINTR
             if d.errno == errno.EINTR:
                 return 1
+            raise
 
     def stop(self):
         """Called from signal handler"""
