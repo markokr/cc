@@ -22,7 +22,7 @@ done
 while [ True ]; do
     sleep 1
     echo "checking if infofile arrived"
-    ls /tmp/infofiles
+    ls /tmp/infofiles/*
 done
 
 # sh kill.sh
