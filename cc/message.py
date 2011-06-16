@@ -19,8 +19,21 @@ class CCMessage(object):
     """
     __slots__ = ('zmsg', 'rpos', 'parsed')
 
-    def __init__(self, zmsg):
-        assert isinstance(zmsg, list)
+    def __init__(self, zmsg=None, jmsg=None, jdict=None):
+        if zmsg:
+            assert isinstance(zmsg, list)
+        else:
+            if jmsg:
+                assert isinstance(jmsg, json.Struct)
+                req = jmsg.req
+                js = jmsg.dump_json()
+            elif jdict:
+                assert isinstance(jdict, dict)
+                req = jdict['req']
+                js = json.dumps(js)
+            else:
+                raise Exception('Missing payload')
+            zmsg = ['', req.encode('utf8'), js, '']
         self.zmsg = zmsg
         self.rpos = zmsg.index('')
         self.parsed = None
@@ -49,7 +62,7 @@ class CCMessage(object):
         """Get parsed payload"""
         if self.parsed is None:
             js = self.get_payload_json()
-            self.parsed = json.loads(js)
+            self.parsed = json.Struct.from_json(js)
         return self.parsed
 
     def get_size(self):
@@ -64,8 +77,9 @@ class CCMessage(object):
     def __repr__(self):
         return self.__str__()
 
-    def make_reply(self, rep):
-        req = rep['req'].encode('utf8')
-        zmsg = self.get_route() + ['', req, json.dumps(rep), '']
-        return CCMessage(zmsg)
+    def take_route(self, cmsg):
+        """Fill local route with route from another message."""
+        r = cmsg.get_route()
+        self.zmsg[:self.rpos] = r
+        self.rpos = len(r)
 

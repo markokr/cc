@@ -44,14 +44,14 @@ class TaskRouter(CCHandler):
     def handle_msg(self, cmsg):
         req = cmsg.get_dest()
         route = cmsg.get_route()
-        data = cmsg.get_payload()
+        msg = cmsg.get_payload()
 
-        cmd = data['req']
-        host = data['host']
+        cmd = msg.req
+        host = msg.host
 
-        if req == 'req.task.register':
+        if req == 'task.register':
             self.register_host(host, route)
-        elif req == 'req.task.send':
+        elif req == 'task.send':
             self.send_host(host, cmsg)
         else:
             self.log.warning('TaskRouter: unknown msg: %s', req)
@@ -86,6 +86,7 @@ class TaskRouter(CCHandler):
         self.log.info('TaskRouter: sending task to %s', host)
         self.cclocal.send_multipart(zmsg)
 
+        # FIXME: proper reply?
         zans = cmsg.get_route() + [''] + ['OK']
         self.cclocal.send_multipart(zans)
 
@@ -95,6 +96,7 @@ class TaskRouter(CCHandler):
         hr = HostRoute(host, route)
         self.route_map[hr.host] = hr
 
+        # FIXME: proper reply?
         zans = route + [''] + ['OK']
         self.cclocal.send_multipart(zans)
 

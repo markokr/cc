@@ -4,6 +4,8 @@ import os, subprocess, select, fcntl, signal
 from zmq.eventloop.ioloop import PeriodicCallback
 from cc.handler import CCHandler
 from cc.util import set_nonblocking
+from cc.reqs import JobConfigReplyMessage
+from cc.message import CCMessage
 
 import skytools
 
@@ -107,16 +109,21 @@ class JobMgr(CCHandler):
         self.log.info('JobMgr req: %s', cmsg)
         data = cmsg.get_payload()
 
-        res = {'req': data['req']}
-        if data['req'] == 'job.config':
-            # send config
-            job = self.jobs[data['job_name']]
-            res['config'] = job.cfdict
+        if data.req == 'job.config':
+            job = self.jobs[data.job_name]
+            msg = JobConfigReplyMessage(
+                req = 'job.config',
+                job_name = data.job_name,
+                config = job.cfdict)
+            crep = CCMessage(jmsg = msg)
         else:
-            res['msg'] = 'Unsupported req'
-        ans = cmsg.make_reply(res)
-        self.cclocal.send_cmsg(ans)
-        self.log.info('JobMgr answer: %s', ans)
+            crep = CCMessage(jdict = {
+                'req': data.req,
+                'job_name': data.job_name,
+                'msg': 'Unsupported req'})
+        crep.take_route(cmsg)
+        self.cclocal.send_cmsg(crep)
+        self.log.info('JobMgr answer: %s', crep)
 
     def stop(self):
         for j in self.jobs.values():

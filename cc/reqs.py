@@ -1,7 +1,15 @@
+import time
 from cc.json import Struct, Field
+from cc.message import CCMessage
+
+__all__ = ['LogMessage', 'InfofileMessage', 'JobRequestMessage', 'JobConfigReplyMessage', 'TaskRegisterMessage', 'TaskSendMessage']
 
 class BaseMessage(Struct):
     req = Field(str)
+
+    def send_to(self, sock):
+        cmsg = CCMessage(jmsg = self)
+        sock.send_multipart(cmsg.zmsg)
 
 class LogMessage(BaseMessage):
     "log.*"
@@ -20,20 +28,20 @@ class InfofileMessage(BaseMessage):
     filename = Field(str)
     body = Field(str)
 
-class JobRequest(BaseMessage):
-    "job.*"
+class JobConfigRequestMessage(BaseMessage):
+    "job.config"
     job_name = Field(str)
 
-class JobConfigReply(BaseMessage):
+class JobConfigReplyMessage(BaseMessage):
     "job.config"
     job_name = Field(str)
     config = Field(dict)
 
-class TaskRegister(BaseMessage):
+class TaskRegisterMessage(BaseMessage):
     "req.task.register"
     host = Field(str)
 
-class TaskSend(BaseMessage):
+class TaskSendMessage(BaseMessage):
     "req.task.send"
     host = Field(str)
 

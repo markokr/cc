@@ -11,6 +11,7 @@ import socket
 
 from cc import json
 from cc.daemon import CCDaemon
+from cc.reqs import InfofileMessage
 
 class InfoStamp:
     def __init__(self, fn, st):
@@ -59,17 +60,13 @@ class InfofileCollector(CCDaemon):
         f.close()
 
     def send_file(self, fs, body):
-        jmsg = {
-            'req': 'pub.infofile',
-            'filename': os.path.basename(fs.filename),
-            'hostname': self.hostname,
-            'mtime': fs.st.st_mtime,
-            'data': body,
-        }
-        hdr = 'pub.infofile'
-        msg = json.dumps(jmsg)
-
-        self.cc.send_multipart(['', hdr, msg])
+        msg = InfofileMessage(
+                req = 'pub.infofile',
+                filename = os.path.basename(fs.filename),
+                hostname = self.hostname,
+                mtime = fs.st.st_mtime,
+                data = body)
+        self.ccpublish(msg)
 
     def find_new(self):
         fnlist = glob.glob(self.infodir + '/info.*')

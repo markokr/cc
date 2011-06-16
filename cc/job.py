@@ -9,6 +9,8 @@ import zmq
 from cc import json
 from cc.message import CCMessage
 
+from cc.reqs import JobConfigRequestMessage, JobConfigReplyMessage, LogMessage, BaseMessage
+
 import skytools
 
 __all__ = ['CCJob', 'CCDaemon', 'CCTask']
@@ -34,39 +36,32 @@ class CCJob(skytools.BaseScript):
     def emit_log(self, rec):
         if not self.cc:
             return
-        jsrec = {
-            'req': 'log.%s' % rec.levelname.lower(),
-            'level': rec.levelname,
-            'service_type': self.service_name,
-            'job_name': self.job_name,
-            'msg': rec.getMessage(),
-            'time': rec.created,
-            'pid': rec.process,
-            'line': rec.lineno,
-            'function': rec.funcName,
-        }
-        zmsg = ['', jsrec['req'], json.dumps(jsrec), '']
-        self.cc.send_multipart(zmsg)
+        msg = LogMessage(
+            req = 'log.%s' % rec.levelname.lower(),
+            level = rec.levelname,
+            service_type = self.service_name,
+            job_name = self.job_name,
+            msg = rec.getMessage(),
+            time = rec.created,
+            pid = rec.process,
+            line = rec.lineno,
+            function = rec.funcName)
+        self.ccpublish(msg)
 
-    def ccquery(self, req, **kwargs):
-        q = kwargs.copy()
-        q['req'] = req
+    def ccquery(self, msg):
+        """Sends query to CC, waits for answer."""
         if not self.cc:
             self.connect_cc()
-        zmsg = ['<query-id>', '', q['req'], json.dumps(q), '']
-        
-        self.cc.send_multipart(zmsg)
-        res = self.cc.recv_multipart()
-        cmsg = CCMessage(res)
-        return cmsg
+        creq = CCMessage(jmsg = msg)
+        self.cc.send_multipart(creq.zmsg)
+        zrep = self.cc.recv_multipart()
+        crep = CCMessage(zrep)
+        return crep.get_payload()
 
-    def ccpublish(self, req, **kwargs):
-        q = kwargs.copy()
-        q['req'] = req
-        if not self.cc:
-            self.connect_cc()
-        zmsg = ['', q['req'], json.dumps(q), '']
-        self.cc.send_multipart(zmsg)
+    def ccpublish(self, msg):
+        assert isinstance(msg, BaseMessage)
+        cmsg = CCMessage(jmsg=msg)
+        self.cc.send_multipart(cmsg.zmsg)
 
     def load_config(self):
         """Loads and returns skytools.Config instance.
@@ -81,15 +76,20 @@ class CCJob(skytools.BaseScript):
             self.job_name = self.options.cctask
         else:
             raise skytools.UsageError('Need either --cctask or --ccdaemon')
-        cmsg = self.ccquery('job.config', job_name = self.job_name)
-        #self.log.debug('got config: %s', cmsg)
-        conf = cmsg.get_payload()['config']
 
+        # query config
+        msg = JobConfigRequestMessage(
+                req = 'job.config',
+                job_name = self.job_name)
+        rep = self.ccquery(msg)
+        conf = rep.config
         return skytools.Config(self.service_name, None, user_defs = conf,
                                override = self.cf_operride)
 
     def _boot_daemon(self):
+        # close ZMQ context/thread before forking to background
         self.close_cc()
+
         super(CCJob, self)._boot_daemon()
 
     def connect_cc(self):
