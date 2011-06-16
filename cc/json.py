@@ -252,7 +252,7 @@ class Struct(dbdict):
 
     def dump_json(self):
         """dumps object to json string"""
-        return json.dumps(self, separators=(',',':'))
+        return json.dumps(self)
     
     def getas(self, name, cast = None, default = None):
         """get value by name with optional casting and default"""
