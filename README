@@ -6,16 +6,18 @@ CC is ZMQ proxy for specific type of ZMQ messaages (CC messages).
 It listens on single ZMQ socket, and processes messages
 by matching message type to handler.
 
-It also has optional 
-
+It also has optional support for launching daemon processes
+and providing config to them.  It is provided only for easier
+administration, as any daemon can be written to be standalone.
 
 
 CC message
 ----------
 
-First quick intro to ZMQ messages: ZMQ messages can contain
-multiple blobs, each one prefixed by length and flag whether
-its last fragment for single logical message.
+First quick intro to ZMQ messages: ZMQ transports blobs,
+with header that specifies length for the blob and whether
+it is last blob or not.  So one logical message can contain
+one or more blobs.  ZMQ calls it "multipart message".
 
 Simple ZMQ request-reply pattern, implemented by zmq.REP, zmq.XREP
 sockets, is to add additional blob at the start of the message
@@ -26,9 +28,9 @@ hops, each one removes the socket id when it send it further.
 Empty part ('') separates such socket ids from actual body parts.
 
 CC messages uses such routing, additionally it specifies meaning
-to body parts:
+to following body parts:
 
-0 - message type
+0 - message type (eg. 'pub.infofile')
 1 - body (json)
 2 - signature
 
@@ -37,6 +39,14 @@ out to make routing easier.
 
 Message types
 -------------
+
+Message type contains dot-separated multiple ids.
+So routing patter can be applied to full id or only
+some prefix parts.
+
+Eg. id 'pub.infofile' can be routed either full
+patter or simply 'pub', which will route all 'pub'
+messages to some handler.
 
 - pub.infofile, pub.state, pub.stats
 - log.info, log.error, ...
@@ -51,12 +61,12 @@ Handler is a Python class that is registered for a message type pattern.
 
 Examples:
 
-proxy: sends message to another CC instance
-dbhandler: launches db function with message
-taskrouter: keeps track of routes to task executors
-infowriter: writes infofiles
-logwriter: writes logfiles
-jobmgr: local jobs [daemons / tasks] query it for config and keepalive
+cc.handler.proxy: sends message to another CC instance
+cc.handler.database: launches db function with message
+cc.handler.taskrouter: keeps track of routes to task executors
+cc.handler.infowriter: writes infofiles
+cc.handler.locallogger: writes logfiles
+cc.handler.jobmgr: local jobs [daemons / tasks] query it for config and keepalive
 
 CC daemons
 ----------
@@ -67,9 +77,9 @@ from CC config, instead of separate standalone scripts.
 
 Examples:
 
-- infosender: reads info files, sends them to CC
-- taskexec: registers on taskrouter, waits for tasks
-- discovery: discovers things
+- cc.daemon.infosender: reads info files, sends them to CC
+- cc.daemon.taskrunner: registers on taskrouter, waits for tasks
+- cc.daemon.discovery: discovers things
 
 Patterns
 --------
@@ -81,32 +91,23 @@ They are managed with CC only for easier administration.
 That also means there are few daemon/handler combinations
 that make sense, and others that don't.
 
-Good patterns:
+To avoid accidental mis-configs, the handlers are checked
+against ccserver's cc-role option.
 
-- Local CC:
-  - listens on localhost
-  - daemons: taskexec, infosender, ...
-  - handlers: jobmgr, proxy
+cc-role = local
+- listens on localhost
+- handlers: jobmgr, proxy, locallogger
+- daemons: taskexec, infosender, ...
 
-- Proxy:
-  - listens network
-  - daemons: -
-  - handlers: proxy
-
-- End-service
-  - listens network
-  - daemons: -
-  - handlers: dbservice / logwriter / infowriter
-
-Bad pattern:
-
-  - local daemons on public service
+cc-role = remote
+- listens network
+- handlers: proxy / dbservice / logwriter / infowriter
+- daemons: -
 
 
 TODO
 ----
 
-- inforeceiver: check mtime
 - jobmgr: track keepalive, relaunch if dead?
 - dbservice: multi-thread / multi-process connection handling
 - ccjob: implement task logic (just job_name picking?)
@@ -115,7 +116,6 @@ TODO
 
 - api: refactor zmq script w/ ioloop out
 - api: common zmq socket tuning
-- api: CCMessage per-type helpers
 - api: rename 'req'.  (mtype, dest, type, target?)
 
 
