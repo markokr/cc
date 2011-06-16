@@ -23,7 +23,7 @@ def write_atomic(fn, data, bakext=None):
                 raise
 
     # write new data to tmp file
-    fn2 = '.' + fn + '.new'
+    fn2 = fn + '.new'
     f = open(fn2, 'w')
     f.write(data)
     f.close()
