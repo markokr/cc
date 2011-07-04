@@ -5,6 +5,7 @@ CC daemon / task
 
 import logging
 import zmq
+import socket
 
 from cc import json
 from cc.message import CCMessage
@@ -30,6 +31,8 @@ class CCJob(skytools.BaseScript):
 
     def __init__(self, service_type, args):
         super(CCJob, self).__init__(service_type, args)
+
+        self.hostname = socket.gethostname()
 
         self.log.addHandler(CallbackLogger(self.emit_log))
 
@@ -60,6 +63,8 @@ class CCJob(skytools.BaseScript):
 
     def ccpublish(self, msg):
         assert isinstance(msg, BaseMessage)
+        if not self.cc:
+            self.connect_cc()
         cmsg = CCMessage(jmsg=msg)
         self.cc.send_multipart(cmsg.zmsg)
 
