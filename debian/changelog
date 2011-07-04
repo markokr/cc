@@ -1,3 +1,9 @@
+cc (0.4.3) unstable; urgency=low
+
+  * cc.daemon.infoscript
+
+ -- Marko Kreen <marko.kreen@skype.net>  Mon, 04 Jul 2011 12:01:03 +0300
+
 cc (0.4.2) unstable; urgency=low
 
   * cc.util: dont prefix tmp file with '.'
