@@ -66,7 +66,7 @@ class JobState:
         else:
             raise skytools.UsageError('dunno how to launch class')
 
-        self.log.info('Launching %s: %s', self.jname, cmd)
+        self.log.info('Launching %s: %s', self.jname, " ".join(cmd))
         self.proc = subprocess.Popen(cmd, close_fds=True,
                                 stdin = open(os.devnull, 'rb'),
                                 stdout = subprocess.PIPE,
