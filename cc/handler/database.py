@@ -1,10 +1,19 @@
+"""Send requests to database function.
 
+Handler sets up a ZMQ socket on random port
+where workers connect to and receive messages.
+
+"""
 import zmq, threading
 
 from cc.handler.proxy import ProxyHandler
 from cc.message import CCMessage
+from cc.handler import CCHandler
+from cc.stream import CCStream
+from cc.job import CallbackLogger
+from cc.reqs import parse_json
 
-import skytools
+import skytools, logging, time
 
 
 __all__ = ['DBHandler']
@@ -12,16 +21,87 @@ __all__ = ['DBHandler']
 CC_HANDLER = 'DBHandler'
 
 #
-# db proxy
+# worker thread
 #
 
-def db_worker(zctx, worker_url, connstr):
+class DBWorker(threading.Thread):
     """Worker thread, can do blocking calls."""
-    s = zctx.socket(zmq.REP)
-    s.connect(worker_url)
-    while 1:
-        cmsg = s.recv_cmsg()
-        s.send_multipart(['fooz', '{fooz}'])
+
+    def __init__(self, name, zctx, worker_url, connstr, log, func_list):
+        super(DBWorker, self).__init__(name=name)
+        self.zctx = zctx
+        self.worker_url = worker_url
+        self.connstr = connstr
+        self.log = log
+        self.db = None
+        self.wconn = None
+        self.func_list = func_list
+
+    def run(self):
+        self.log.debug('worker running')
+        self.wconn = self.zctx.socket(zmq.XREP)
+        self.wconn.connect(self.worker_url)
+        while 1:
+            try:
+                self.work()
+            except:
+                self.log.exception('worker crash')
+                self.reset()
+                time.sleep(10)
+
+    def reset(self):
+        try:
+            if self.db:
+                self.db.close()
+                self.db = None
+        except:
+            pass
+
+    def work(self):
+        zmsg = self.wconn.recv_multipart()
+        cmsg = CCMessage(zmsg=zmsg)
+        self.log.debug('DBWorker: msg=%r', cmsg)
+
+        if not self.db:
+            self.log.info('connecting to database')
+            self.db = skytools.connect_database(self.connstr)
+            self.db.set_isolation_level(0)
+
+        self.process_request(cmsg)
+
+    def process_request(self, cmsg):
+        curs = self.db.cursor()
+        msg = cmsg.get_payload()
+        js = cmsg.get_payload_json()
+
+        func = msg.function
+
+        if len(self.func_list) == 1 and self.func_list[0] == '*':
+            pass
+        elif func in self.func_list:
+            pass
+        else:
+            self.log.error('Function call not allowed: %r', func)
+            return None
+
+        q = "select %s(%%s)" % skytools.quote_fqident(func)
+        self.log.debug('Executing: %s', q)
+        curs.execute(q, [js])
+
+        res = curs.fetchall()
+        if not res:
+            js2 = '{}'
+        else:
+            js2 = res[0][0]
+        jmsg = parse_json(js2)
+        cmsg2 = CCMessage(jmsg = jmsg)
+        cmsg2.take_route(cmsg)
+        self.wconn.send_multipart(cmsg2.zmsg)
+
+
+#
+# db proxy
+#
 
 class DBHandler(ProxyHandler):
     """Send request to workers."""
@@ -36,8 +116,14 @@ class DBHandler(ProxyHandler):
         return s
 
     def launch_workers(self):
-        nworkers = 10
-        wargs = (self.zctx, self.worker_url, self.cf.get('db'))
+        nworkers = self.cf.getint('worker-threads', 10)
+        func_list = self.cf.getlist('allowed-functions', [])
+        self.log.info('allowed-functions: %r', func_list)
+        connstr = self.cf.get('db')
         for i in range(nworkers):
-            threading.Thread(target = db_worker, args = wargs)
+            wname = '.worker%d' % i
+            self.log.info('launching: %s.%s', self.hname, wname)
+            log = self.log
+            w = DBWorker(self.hname + '.' + wname, self.zctx, self.worker_url, connstr, log, func_list)
+            w.start()
 

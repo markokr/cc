@@ -13,11 +13,11 @@ mkdir -p /tmp/infofiles
 
 for ini in conf/*.ini; do
   echo "starting $ini"
-  python -m cc.server -d $ini
+  python -m cc.server -d -v $ini
 done
 
-# echo 'sending task'
-# testmsg.py task
+echo 'sending db'
+./bin/testmsg.py db
 
 while [ True ]; do
     sleep 1

@@ -23,6 +23,8 @@ elif typ == 'task':
     msg = {'req': 'req.task.send', 'host': 'hostname'}
 elif typ == 'log':
     msg = {'req': 'pub.log', 'host': 'hostname', 'msg': 'Foo'}
+elif typ == 'db':
+    msg = {'req': 'confdb', 'host': 'hostname', 'function': 'public.test_json'}
 else:
     print 'unknown type'
     sys.exit(0)
