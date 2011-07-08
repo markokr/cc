@@ -109,10 +109,8 @@ TODO
 ----
 
 - jobmgr: track keepalive, relaunch if dead?
-- dbservice: multi-thread / multi-process connection handling
 - ccjob: implement task logic (just job_name picking?)
 - taskexec: implement
-- logwriter: implement
 
 - api: refactor zmq script w/ ioloop out
 - api: common zmq socket tuning
