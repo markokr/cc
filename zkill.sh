@@ -9,6 +9,8 @@ for f in ~/pid/*.pid; do
   fi
 done
 
+pkill -f cc.daemon
+
 #rm -rf ./var/log ./var/run ./var/info* ./infodir/info*
 #mkdir -p var/log var/run
 

@@ -17,26 +17,14 @@ class CCMessage(object):
     - cc payload (json)
     - cc signature
     """
-    __slots__ = ('zmsg', 'rpos', 'parsed')
+    __slots__ = ('zmsg', 'rpos', 'parsed', 'signature')
 
-    def __init__(self, zmsg=None, jmsg=None, jdict=None):
-        if zmsg:
-            assert isinstance(zmsg, list)
-        else:
-            if jmsg:
-                assert isinstance(jmsg, json.Struct)
-                req = jmsg.req
-                js = jmsg.dump_json()
-            elif jdict:
-                assert isinstance(jdict, dict)
-                req = jdict['req']
-                js = json.dumps(js)
-            else:
-                raise Exception('Missing payload')
-            zmsg = ['', req.encode('utf8'), js, '']
+    def __init__(self, zmsg):
+        assert isinstance(zmsg, list)
         self.zmsg = zmsg
         self.rpos = zmsg.index('')
         self.parsed = None
+        self.signature = None
 
     def get_route(self):
         """Route parts"""
@@ -50,20 +38,15 @@ class CCMessage(object):
         """Return destination part"""
         return self.zmsg[self.rpos + 1]
 
-    def get_payload_json(self):
+    def get_part1(self):
         """Return body (json) as string"""
         return self.zmsg[self.rpos + 2]
 
-    def get_sig(self):
+    def get_part2(self):
         """Retrun signature"""
+        if self.rpos + 3 >= len(self.zmsg):
+            return ''
         return self.zmsg[self.rpos + 3]
-
-    def get_payload(self):
-        """Get parsed payload"""
-        if self.parsed is None:
-            js = self.get_payload_json()
-            self.parsed = json.Struct.from_json(js)
-        return self.parsed
 
     def get_size(self):
         n = 0
@@ -82,4 +65,16 @@ class CCMessage(object):
         r = cmsg.get_route()
         self.zmsg[:self.rpos] = r
         self.rpos = len(r)
+
+    def get_payload(self, xtx):
+        if self.parsed:
+            return self.parsed
+        msg, sgn = xtx.parse_cmsg(self)
+        self.parsed = msg
+        self.signature = sgn
+        return msg
+
+    def get_signature(self, xtx):
+        self.get_payload(xtx)
+        return self.signature
 

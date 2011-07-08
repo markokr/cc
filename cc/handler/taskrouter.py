@@ -45,9 +45,10 @@ class TaskRouter(CCHandler):
         self.timer.start()
 
     def handle_msg(self, cmsg):
+
+        msg = cmsg.get_payload(self.xtx)
         req = cmsg.get_dest()
         route = cmsg.get_route()
-        msg = cmsg.get_payload()
 
         cmd = msg.req
         host = msg.host

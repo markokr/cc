@@ -6,6 +6,7 @@ from cc.handler import CCHandler
 from cc.util import set_nonblocking
 from cc.reqs import JobConfigReplyMessage
 from cc.message import CCMessage
+from cc.crypto import CryptoContext
 
 import skytools
 
@@ -18,7 +19,7 @@ CC_HANDLER = 'JobMgr'
 #
 
 class JobState:
-    def __init__(self, jname, jcf, log, cc_url, ioloop, pidfiledir):
+    def __init__(self, jname, jcf, log, cc_url, ioloop, pidfiledir, xtx):
         self.jname = jname
         self.jcf = jcf
         self.proc = None
@@ -31,6 +32,7 @@ class JobState:
                 'job_name': self.jname,
                 'pidfile': self.pidfile,
         }
+        xtx.fill_config(self.cfdict)
         for o in self.jcf.options():
             self.cfdict[o] = self.jcf.get(o)
 
@@ -99,9 +101,11 @@ class JobMgr(CCHandler):
         for dname in self.cf.getlist('daemons'):
             self.add_job(dname)
 
+        self.xtx = CryptoContext(None)
+
     def add_job(self, jname):
         jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
-        jstate = JobState(jname, jcf, self.log, self.local_url, self.ioloop, self.pidfiledir)
+        jstate = JobState(jname, jcf, self.log, self.local_url, self.ioloop, self.pidfiledir, self.xtx)
         self.jobs[jname] = jstate
         jstate.start()
         
@@ -109,7 +113,7 @@ class JobMgr(CCHandler):
         """Got message from client, send to remote CC"""
 
         self.log.info('JobMgr req: %s', cmsg)
-        data = cmsg.get_payload()
+        data = cmsg.get_payload(self.xtx)
 
         if data.req == 'job.config':
             job = self.jobs[data.job_name]
@@ -117,12 +121,13 @@ class JobMgr(CCHandler):
                 req = 'job.config',
                 job_name = data.job_name,
                 config = job.cfdict)
-            crep = CCMessage(jmsg = msg)
+            crep = self.xtx.create_cmsg(msg)
         else:
-            crep = CCMessage(jdict = {
+            jdict = {
                 'req': data.req,
                 'job_name': data.job_name,
-                'msg': 'Unsupported req'})
+                'msg': 'Unsupported req'}
+            crep = self.xtx.create_cmsg(jdict)
         crep.take_route(cmsg)
         self.cclocal.send_cmsg(crep)
         self.log.info('JobMgr answer: %s', crep)

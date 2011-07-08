@@ -30,7 +30,7 @@ else:
     sys.exit(0)
 
 mjs = json.dumps(msg)
-zmsg = ['', msg['req'], mjs]
+zmsg = ['', msg['req'], mjs, '']
 
 print 'request:', repr(zmsg)
 sock.send_multipart(zmsg)

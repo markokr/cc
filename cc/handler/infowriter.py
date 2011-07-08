@@ -26,7 +26,8 @@ class InfoWriter(CCHandler):
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
 
-        data = cmsg.get_payload()
+        data = cmsg.get_payload(self.xtx)
+
         mtime = data['mtime']
         host = data['hostname']
         fn = os.path.basename(data['filename'])

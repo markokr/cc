@@ -12,6 +12,7 @@ from cc.handler import CCHandler
 from cc.stream import CCStream
 from cc.job import CallbackLogger
 from cc.reqs import parse_json
+from cc.crypto import CryptoContext
 
 import skytools, logging, time
 
@@ -27,7 +28,7 @@ CC_HANDLER = 'DBHandler'
 class DBWorker(threading.Thread):
     """Worker thread, can do blocking calls."""
 
-    def __init__(self, name, zctx, worker_url, connstr, log, func_list):
+    def __init__(self, name, zctx, worker_url, connstr, log, func_list, xtx):
         super(DBWorker, self).__init__(name=name)
         self.zctx = zctx
         self.worker_url = worker_url
@@ -36,6 +37,7 @@ class DBWorker(threading.Thread):
         self.db = None
         self.wconn = None
         self.func_list = func_list
+        self.xtx = xtx
 
     def run(self):
         self.log.debug('worker running')
@@ -45,7 +47,7 @@ class DBWorker(threading.Thread):
             try:
                 self.work()
             except:
-                self.log.exception('worker crash')
+                self.log.exception('worker crash, dropping msg')
                 self.reset()
                 time.sleep(10)
 
@@ -59,7 +61,7 @@ class DBWorker(threading.Thread):
 
     def work(self):
         zmsg = self.wconn.recv_multipart()
-        cmsg = CCMessage(zmsg=zmsg)
+        cmsg = CCMessage(zmsg)
         self.log.debug('DBWorker: msg=%r', cmsg)
 
         if not self.db:
@@ -71,7 +73,7 @@ class DBWorker(threading.Thread):
 
     def process_request(self, cmsg):
         curs = self.db.cursor()
-        msg = cmsg.get_payload()
+        msg = cmsg.get_payload(self.xtx)
         js = cmsg.get_payload_json()
 
         func = msg.function
@@ -124,6 +126,7 @@ class DBHandler(ProxyHandler):
             wname = '.worker%d' % i
             self.log.info('launching: %s.%s', self.hname, wname)
             log = self.log
-            w = DBWorker(self.hname + '.' + wname, self.zctx, self.worker_url, connstr, log, func_list)
+            w = DBWorker(self.hname + '.' + wname, self.zctx, self.worker_url,
+                         connstr, log, func_list, self.xtx)
             w.start()
 

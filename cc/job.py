@@ -12,6 +12,8 @@ from cc.message import CCMessage
 
 from cc.reqs import JobConfigRequestMessage, JobConfigReplyMessage, LogMessage, BaseMessage
 
+from cc.crypto import CryptoContext
+
 import skytools
 
 __all__ = ['CCJob', 'CCDaemon', 'CCTask']
@@ -30,11 +32,14 @@ class CCJob(skytools.BaseScript):
     cc = None
 
     def __init__(self, service_type, args):
+        self.xtx = CryptoContext(None)
         super(CCJob, self).__init__(service_type, args)
 
         self.hostname = socket.gethostname()
 
         self.log.addHandler(CallbackLogger(self.emit_log))
+
+        self.xtx = CryptoContext(self.cf)
 
     def emit_log(self, rec):
         if not self.cc:
@@ -55,17 +60,18 @@ class CCJob(skytools.BaseScript):
         """Sends query to CC, waits for answer."""
         if not self.cc:
             self.connect_cc()
-        creq = CCMessage(jmsg = msg)
-        self.cc.send_multipart(creq.zmsg)
-        zrep = self.cc.recv_multipart()
-        crep = CCMessage(zrep)
-        return crep.get_payload()
+
+        cmsg = self.xtx.create_cmsg(msg)
+        self.cc.send_multipart(cmsg.zmsg)
+
+        crep = CCMessage(self.cc.recv_multipart())
+        return crep.get_payload(self.xtx)
 
     def ccpublish(self, msg):
         assert isinstance(msg, BaseMessage)
         if not self.cc:
             self.connect_cc()
-        cmsg = CCMessage(jmsg=msg)
+        cmsg = self.xtx.create_cmsg(msg)
         self.cc.send_multipart(cmsg.zmsg)
 
     def load_config(self):

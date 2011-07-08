@@ -11,6 +11,6 @@ class LocalLogger(CCHandler):
     CC_ROLES = ['local', 'remote']
 
     def handle_msg(self, cmsg):
-        msg = cmsg.get_payload()
+        msg = cmsg.get_payload(self.xtx)
         self.log.info('[%s@%s] %s %s', msg.job_name, msg.hostname, msg.level, msg.msg)
 

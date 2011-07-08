@@ -28,7 +28,7 @@ Config::
 """
 
 
-import sys, errno
+import sys, errno, os.path
 import zmq, zmq.eventloop
 
 import skytools
@@ -38,6 +38,8 @@ from zmq.eventloop.ioloop import PeriodicCallback
 from cc.message import CCMessage
 from cc.stream import CCStream
 from cc.handler import cc_handler_lookup
+from cc.crypto import CryptoContext
+
 
 class CCServer(skytools.BaseScript):
     """Listens on single ZMQ sockets, dispatches messages to handlers."""
@@ -47,6 +49,7 @@ class CCServer(skytools.BaseScript):
 
         super(CCServer, self).startup()
 
+        self.xtx = CryptoContext(self.cf)
         self.zctx = zmq.Context()
         self.ioloop = zmq.eventloop.IOLoop.instance()
 
@@ -99,6 +102,7 @@ class CCServer(skytools.BaseScript):
         """Got message from client, pick handler."""
 
         try:
+            self.log.debug('handle_cc_recv: %r', zmsg)
             cmsg = CCMessage(zmsg)
             dst = cmsg.get_dest()
             route = tuple(dst.split('.'))
