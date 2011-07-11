@@ -2,7 +2,7 @@
 
 This implements PKCS#7/CMS crypto operations on plain (byte-string)
 messages.  Signatures and encrypted messages are output as
-base64-encoded PEM messages.
+binary DER-encoded messages.
 
 Formatting messages for ZMQ packets is done in cc.message module.
 """
@@ -11,6 +11,18 @@ from M2Crypto import SMIME, BIO, X509
 import os.path
 from cc.json import Struct
 from cc.message import CCMessage
+
+# loading base64 msg is horribly slow (openssl:PEM_read_bio_PKCS7)
+# switch to binary DER encoding instead
+RAW_MESSAGES = 1
+
+# M2Crypto forgot to provide helper function for DER msgs
+from M2Crypto import m2, Err
+def load_pkcs7_bio_der(p7_bio):
+    p7_ptr = m2.pkcs7_read_bio_der(p7_bio._ptr())
+    if p7_ptr is None:
+        raise SMIME.PKCS7_Error(Err.get_error())
+    return SMIME.PKCS7(p7_ptr, 1)
 
 class KeyStore(object):
     """Keys and certs in separate dirs, different extensions.
@@ -92,7 +104,10 @@ class CMSTool:
 
         # return signature
         res = BIO.MemoryBuffer()
-        pk.write(res)
+        if RAW_MESSAGES:
+            pk.write_der(res)
+        else:
+            pk.write(res)
         return res.read()
 
     def verify(self, data, signature, ca_name, detached=True):
@@ -117,7 +132,10 @@ class CMSTool:
 
         # init data
         bsign = BIO.MemoryBuffer(signature)
-        pk = SMIME.load_pkcs7_bio(bsign)
+        if RAW_MESSAGES:
+            pk = load_pkcs7_bio_der(bsign)
+        else:
+            pk = SMIME.load_pkcs7_bio(bsign)
 
         # check signature
         if detached:
@@ -173,7 +191,10 @@ class CMSTool:
 
         # return ciphertext
         buf = BIO.MemoryBuffer()
-        pk.write(buf)
+        if RAW_MESSAGES:
+            pk.write_der(buf)
+        else:
+            pk.write(buf)
         return buf.read()
 
     def decrypt(self, ciphtext, receiver_name):
@@ -192,7 +213,10 @@ class CMSTool:
 
         # decrypt
         bdata = BIO.MemoryBuffer(ciphtext)
-        pk = SMIME.load_pkcs7_bio(bdata)
+        if RAW_MESSAGES:
+            pk = load_pkcs7_bio_der(bdata)
+        else:
+            pk = SMIME.load_pkcs7_bio(bdata)
         return sm.decrypt(pk, SMIME.PKCS7_BINARY)
 
     def sign_and_encrypt(self, data, sender_name, receiver_name):
@@ -418,7 +442,68 @@ def test():
     print inf
     print 'OK'
 
+def bench():
+    msg = """{ "foo": "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaar" }\n"""
+    msg = msg * 500
+    c = CMSTool(TestStore())
+    import time
+
+    print 'msg len', len(msg)
+
+    count = 5000
+
+    print 'Signing...'
+
+    start = time.time()
+    for i in range(count):
+        sgn = c.sign(msg, 'user1')
+    now = time.time()
+    if count > 1 and now > start:
+        print 'rate', count / (0.0 + now - start)
+
+    print 'Checking...'
+    start = time.time()
+    for i in range(count):
+        c.verify(msg, sgn, 'ca')
+    now = time.time()
+    if count > 1 and now > start:
+        print 'rate', count / (0.0 + now - start)
+
+    print 'Encrypting...'
+    start = time.time()
+    for i in range(count):
+        enc = c.encrypt(msg, 'user1')
+    now = time.time()
+    if count > 1 and now > start:
+        print 'rate', count / (0.0 + now - start)
+
+    print 'Decrypting...'
+    start = time.time()
+    for i in range(count):
+        txt = c.decrypt(enc, 'user1')
+    now = time.time()
+    if count > 1 and now > start:
+        print 'rate', count / (0.0 + now - start)
+
+    print 'sign_and_encrypt'
+    start = time.time()
+    for i in range(count):
+        enc = c.sign_and_encrypt(msg, 'user1', 'server')
+    now = time.time()
+    if count > 1 and now > start:
+        print 'rate', count / (0.0 + now - start)
+
+    print 'decrypt_and_verify'
+    start = time.time()
+    for i in range(count):
+        msg2, inf = c.decrypt_and_verify(enc, 'server', 'ca')
+    now = time.time()
+    if count > 1 and now > start:
+        print 'rate', count / (0.0 + now - start)
+
+    print 'OK'
 
 if __name__ == '__main__':
     test()
+    bench()
 
