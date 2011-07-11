@@ -132,7 +132,7 @@ cms-sign:
 cms-verify-ca:
   Cert name to use to signature verification.  requires
   ./$name.crt under keystore.  If set, incoming messages
-  must be signed and certifid by CA.
+  must be signed under key certified by CA.
 
 cms-encrypt:
   Cert name to encrypt to.  Requires ./$name.crt under keystore.
@@ -155,4 +155,32 @@ TODO
 - api: refactor zmq script w/ ioloop out
 - api: common zmq socket tuning
 - api: rename 'req'.  (mtype, dest, type, target?)
+
+task poller
+-----------
+- daemon that periodically check for new tasks from db (pgq / polling)
+- sends task under 'task.send' message type to CC which has 'taskrouter'
+  handler configured.
+
+task executor
+-------------
+- cc daemon that sends 'task.register' msg to CC with 'taskrouter' handler. (done)
+- when it receives task, must execute corresponding script.
+
+crypto
+------
+- user/server name in cert must be checked for username in message
+  - define place in cert to have user
+  - define name field in message
+  - server: check if cert matches msg
+  - server: check if user is authorized to access service
+    (unrelated to crypto, except when we put access rights into cert)
+  - make cert details available to python code (done)
+- replayability fix (may not matter for info & log msgs), but is needed
+  for confdb access:
+  - client: have unique id for each message
+  - client: have timestamp in message (done)
+  - server: keep track of msgids for last 5m, drop dup messages
+  - server: check message timestamp, drop old messages
+
 
