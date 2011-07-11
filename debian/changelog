@@ -1,3 +1,9 @@
+cc (0.5.2) unstable; urgency=low
+
+  * Switch to binary messages, OpenSSL's base64 is a disaster.
+
+ -- Marko Kreen <marko.kreen@skype.net>  Mon, 11 Jul 2011 21:06:36 +0300
+
 cc (0.5.1) unstable; urgency=low
 
   * Better crypto.
