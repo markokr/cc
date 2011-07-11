@@ -72,8 +72,10 @@ class DBWorker(threading.Thread):
         self.process_request(cmsg)
 
     def process_request(self, cmsg):
-        curs = self.db.cursor()
         msg = cmsg.get_payload(self.xtx)
+        if not msg:
+            return
+        curs = self.db.cursor()
         js = cmsg.get_payload_json()
 
         func = msg.function

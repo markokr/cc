@@ -221,7 +221,8 @@ class CMSTool:
 #
 
 class CryptoContext:
-    def __init__(self, cf):
+    def __init__(self, cf, log):
+        self.log = log
         if not cf:
             self.cms = None
             self.ks_dir = ''
@@ -239,7 +240,7 @@ class CryptoContext:
         self.ca_name = cf.get('cms-verify-ca', '')
         self.decrypt_name = cf.get('cms-decrypt', '')
         self.sign_name = cf.get('cms-sign', '')
-        self.encrypt_name = cf.get('cmd-encrypt', '')
+        self.encrypt_name = cf.get('cms-encrypt', '')
 
     def fill_config(self, cf_dict):
         pairs = (('cms-verify-ca', 'ca_name'),
@@ -257,12 +258,16 @@ class CryptoContext:
         part1 = js
         part2 = ''
         if self.encrypt_name and self.sign_name:
+            self.log.info("CryptoContext.create_cmsg: encrypt: %s", msg['req'])
             part1 = 'ENC1'
             part2 = self.cms.sign_and_encrypt(js, self.sign_name, self.encrypt_name)
         elif self.encrypt_name:
             raise Exception('encrypt_name without sign_name?')
         elif self.sign_name:
+            self.log.info("CryptoContext.create_cmsg: sign: %s", msg['req'])
             part2 = self.cms.sign(js, self.sign_name)
+        else:
+            self.log.info("CryptoContext.create_cmsg: no crypto: %s", msg['req'])
         return CCMessage(['', msg.req.encode('utf8'), part1, part2])
 
     def parse_cmsg(self, cmsg):
@@ -270,20 +275,32 @@ class CryptoContext:
         part1 = cmsg.get_part1()
         part2 = cmsg.get_part2()
 
-        if part1 == 'ENC1':
+        if self.decrypt_name:
+            if part1 != 'ENC1':
+                self.log.error('Expect encrypted message')
+                return (None, None)
             if not self.decrypt_name or not self.ca_name:
-                raise Exception('Cannot decrypt message')
+                self.log.error('Cannot decrypt message')
+                return (None, None)
+            self.log.info("CryptoContext.parse_cmsg: decrypt: %s", cmsg.get_dest())
             js, sgn = self.cms.decrypt_and_verify(part2, self.decrypt_name, self.ca_name)
+        elif part1 == 'ENC1':
+            self.log.error('Got encrypted msg but cannot decrypt it')
+            return (None, None)
         elif self.ca_name:
             if not part2:
-                raise Exception('Expect signed message')
+                self.log.error('Expect signed message')
+                return (None, None)
+            self.log.info("CryptoContext.parse_cmsg: verify: %s", cmsg.get_dest())
             js, sgn = self.cms.verify(part1, part2, self.ca_name)
         else:
+            self.log.info("CryptoContext.parse_cmsg: no crypto: %s", cmsg.get_dest())
             js, sgn = part1, None
 
         msg = Struct.from_json(js)
         if msg.req != req:
-            raise Exception('invalid message')
+            self.log.error('hijacked message')
+            return (None, None)
 
         return msg, sgn
 

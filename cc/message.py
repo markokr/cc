@@ -55,7 +55,10 @@ class CCMessage(object):
         return n
 
     def __str__(self):
-        return 'CCMessage%s' % repr(self.zmsg)
+        x = repr(self.zmsg)
+        if len(x) > 200:
+            x = x[:200] + ' ...'
+        return 'CCMessage%s' % x
 
     def __repr__(self):
         return self.__str__()
@@ -70,6 +73,8 @@ class CCMessage(object):
         if self.parsed:
             return self.parsed
         msg, sgn = xtx.parse_cmsg(self)
+        if not msg:
+            return None
         self.parsed = msg
         self.signature = sgn
         return msg

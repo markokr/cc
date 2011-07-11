@@ -27,19 +27,28 @@ class CallbackLogger(logging.Handler):
     def emit(self, rec):
         self.log_cb(rec)
 
+class NoLog:
+    def error(self, *args): pass
+    def info(self, *args): pass
+    def warning(self, *args): pass
+    def debug(self, *args): pass
+
 class CCJob(skytools.BaseScript):
     zctx = None
     cc = None
 
     def __init__(self, service_type, args):
-        self.xtx = CryptoContext(None)
+        # no crypto for logs
+        self.logxtx = CryptoContext(None, NoLog())
+        self.xtx = CryptoContext(None, NoLog())
+
         super(CCJob, self).__init__(service_type, args)
 
         self.hostname = socket.gethostname()
 
         self.log.addHandler(CallbackLogger(self.emit_log))
 
-        self.xtx = CryptoContext(self.cf)
+        self.xtx = CryptoContext(self.cf, self.log)
 
     def emit_log(self, rec):
         if not self.cc:
@@ -54,7 +63,10 @@ class CCJob(skytools.BaseScript):
             pid = rec.process,
             line = rec.lineno,
             function = rec.funcName)
-        self.ccpublish(msg)
+        if not self.cc:
+            self.connect_cc()
+        cmsg = self.logxtx.create_cmsg(msg)
+        self.cc.send_multipart(cmsg.zmsg)
 
     def ccquery(self, msg):
         """Sends query to CC, waits for answer."""
@@ -94,6 +106,7 @@ class CCJob(skytools.BaseScript):
                 job_name = self.job_name)
         rep = self.ccquery(msg)
         conf = rep.config
+        print('Got config: %r' % conf)
         return skytools.Config(self.service_name, None, user_defs = conf,
                                override = self.cf_operride)
 

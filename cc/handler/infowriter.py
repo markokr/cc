@@ -27,6 +27,8 @@ class InfoWriter(CCHandler):
         """Got message from client, send to remote CC"""
 
         data = cmsg.get_payload(self.xtx)
+        if not data:
+            return
 
         mtime = data['mtime']
         host = data['hostname']

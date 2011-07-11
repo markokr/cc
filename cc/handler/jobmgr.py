@@ -101,7 +101,7 @@ class JobMgr(CCHandler):
         for dname in self.cf.getlist('daemons'):
             self.add_job(dname)
 
-        self.xtx = CryptoContext(None)
+        self.xtx = CryptoContext(None, self.log)
 
     def add_job(self, jname):
         jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
@@ -114,6 +114,8 @@ class JobMgr(CCHandler):
 
         self.log.info('JobMgr req: %s', cmsg)
         data = cmsg.get_payload(self.xtx)
+        if not data:
+            return
 
         if data.req == 'job.config':
             job = self.jobs[data.job_name]

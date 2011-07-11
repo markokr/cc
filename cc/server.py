@@ -49,7 +49,7 @@ class CCServer(skytools.BaseScript):
 
         super(CCServer, self).startup()
 
-        self.xtx = CryptoContext(self.cf)
+        self.xtx = CryptoContext(self.cf, self.log)
         self.zctx = zmq.Context()
         self.ioloop = zmq.eventloop.IOLoop.instance()
 
@@ -102,6 +102,12 @@ class CCServer(skytools.BaseScript):
         """Got message from client, pick handler."""
 
         try:
+            cmsg = CCMessage(zmsg)
+        except:
+            self.log.exception('Invalid ZMQ format')
+            return
+
+        try:
             self.log.debug('handle_cc_recv: %r', zmsg)
             cmsg = CCMessage(zmsg)
             dst = cmsg.get_dest()
@@ -116,13 +122,13 @@ class CCServer(skytools.BaseScript):
                     h.handle_msg(cmsg)
                     cnt += 1
             if cnt == 0:
-                self.log.warning('dropping msg, no route: %s', repr(zmsg))
+                self.log.warning('dropping msg, no route: %s', cmsg.get_dest())
 
             # update stats
             self.stat_increase('count')
             self.stat_increase('bytes', cmsg.get_size())
         except Exception:
-            self.log.exception('handle_cc_recv crashed, dropping msg: %s', repr(zmsg))
+            self.log.exception('handle_cc_recv crashed, dropping msg: %s', cmsg.get_dest())
 
     def work(self):
         """Default work loop simply runs ioloop."""
