@@ -1,3 +1,6 @@
-conf/mongrel2.db
-hots/*.pyc
+cc/*.pyc
+cc/handler/*.pyc
+cc/daemon/*.pyc
 var
+keys/*.crt
+keys/*.key
