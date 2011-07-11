@@ -105,6 +105,46 @@ cc-role = remote
 - daemons: -
 
 
+Crypto
+------
+
+CC uses the CMS/PKCS7 message format (from SMIME) for signing
+and encrypting.
+
+Currently ccserver and daemons have crypto config, handlers
+all share the top-level ccserver's one.  Daemon config
+is inherited from master ccserver.
+
+cms-keystore:
+  directory where certs and private keys are stored.  Private
+  keys are under ./private subdir.  So common server keystore
+  would look like:
+
+  ./server.crt
+  ./ca.crt
+  ./confdb.crt
+  ./private/server.key
+
+cms-sign:
+  Key name to sign as.  requires files ./$key.crt and ./private/$key.key
+  under keystore.  If set, all outgoing messages are signed.
+
+cms-verify-ca:
+  Cert name to use to signature verification.  requires
+  ./$name.crt under keystore.  If set, incoming messages
+  must be signed and certifid by CA.
+
+cms-encrypt:
+  Cert name to encrypt to.  Requires ./$name.crt under keystore.
+  Note - this should not be CA cert but some service one, like 'infoserver'.
+  Must be paired with cms-sign.
+
+cms-decrypt:
+  Key and cert name to decrypt as.  Requires $name.crt and ./private/$name.key.
+  Note - service key.
+  Must be paired with cms-verify-ca.
+
+
 TODO
 ----
 
@@ -115,5 +155,4 @@ TODO
 - api: refactor zmq script w/ ioloop out
 - api: common zmq socket tuning
 - api: rename 'req'.  (mtype, dest, type, target?)
-
 
