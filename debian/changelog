@@ -1,3 +1,9 @@
+cc (0.5.1) unstable; urgency=low
+
+  * Better crypto.
+
+ -- Marko Kreen <marko.kreen@skype.net>  Mon, 11 Jul 2011 14:25:14 +0300
+
 cc (0.5) unstable; urgency=low
 
   * Sign & encrypt
