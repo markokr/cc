@@ -55,13 +55,18 @@ run_ca() {
     cp "testca/newcerts/$ser.pem" "$2"
   fi
 }
-run openssl genrsa -out user1.key 512
 
-run openssl genrsa -out ca.key 512
+ksize=2048
+ksize=1024
+ksize=512
 
-run openssl genrsa -out server.key 512
+run openssl genrsa -out user1.key $ksize
 
-run openssl genrsa -out confdb.key 512
+run openssl genrsa -out ca.key $ksize
+
+run openssl genrsa -out server.key $ksize
+
+run openssl genrsa -out confdb.key $ksize
 
 # self-signed cert
 run_req -new -x509 -key ca.key -out ca.crt -- C=EE L=Tartu O=Skype OU=TempCA CN="Test CA Server"

@@ -16,6 +16,9 @@ from cc.message import CCMessage
 # switch to binary DER encoding instead
 RAW_MESSAGES = 1
 
+# re-use initialized context
+CACHE_KEYS = 1
+
 # M2Crypto forgot to provide helper function for DER msgs
 from M2Crypto import m2, Err
 def load_pkcs7_bio_der(p7_bio):
@@ -23,6 +26,7 @@ def load_pkcs7_bio_der(p7_bio):
     if p7_ptr is None:
         raise SMIME.PKCS7_Error(Err.get_error())
     return SMIME.PKCS7(p7_ptr, 1)
+
 
 class KeyStore(object):
     """Keys and certs in separate dirs, different extensions.
@@ -74,12 +78,13 @@ class KeyStore(object):
 
 class CMSTool:
     """Cryptographic Message Syntax
-    
+
     We use SMIME algorithms, but not formatting.   Instead
-    the data is formatted as simple PKCS7 base64 blobs.
+    the data is formatted as simple PKCS7 blobs.
     """
     def __init__(self, keystore):
         self.ks = keystore
+        self.cache = {}
 
     def sign(self, data, sender_name, detached=True):
         """Create detached signature.
@@ -89,11 +94,7 @@ class CMSTool:
         Returns signature.
         """
 
-        # setup key
-        sm = SMIME.SMIME()
-        sm.load_key_bio(
-                self.ks.load_key_bio(sender_name),
-                self.ks.load_cert_bio(sender_name))
+        sm = self.get_sign_ctx(sender_name)
 
         # sign
         bdata = BIO.MemoryBuffer(data)
@@ -118,17 +119,7 @@ class CMSTool:
         Returns tuple (data, signer_details_dict).
         """
 
-        # load cert(s)
-        ca_crt = self.ks.load_cert_obj(ca_name)
-        xk = X509.X509_Stack()
-        xk.push(ca_crt)
-        xs = X509.X509_Store()
-        xs.add_cert(ca_crt)
-
-        # init SMIME object
-        sm = SMIME.SMIME()
-        sm.set_x509_stack(xk)
-        sm.set_x509_store(xs)
+        sm = self.get_verify_ctx(ca_name)
 
         # init data
         bsign = BIO.MemoryBuffer(signature)
@@ -147,43 +138,17 @@ class CMSTool:
         else:
             data2 = sm.verify(pk, flags = SMIME.PKCS7_BINARY)
 
-        # collect signature details
-        sign_stack = pk.get0_signers(xk)
-        crt0 = sign_stack.pop()
-        inf = {}
-        inf['not_before'] = crt0.get_not_before().get_datetime()
-        inf['not_after'] = crt0.get_not_after().get_datetime()
-        inf['serial'] = crt0.get_serial_number()
-        inf['version'] = crt0.get_version()
-        subj = crt0.get_subject()
-        inf['subject'] = subj.as_text()
-        for k in ['C', 'ST', 'CN', 'O', 'L', 'emailAddress']:
-            if hasattr(subj, k):
-                inf[k] = getattr(subj, k)
-
-        # disallow multiple certs in signature - dunno when it happens
-        if sign_stack.pop():
-            raise Exception('Confused by multiple certs in signature')
-
-        return data2, inf
+        return data2, self.get_signature_info(sm, pk)
 
     def encrypt(self, plaintext, receiver_name):
         """Encrypt message.
-        
+
         Requires recipient cert.
 
         Returns encrypted message.
         """
 
-        # here we could add several certs
-        crt = self.ks.load_cert_obj(receiver_name)
-        x = X509.X509_Stack()
-        x.push(crt)
-
-        # SMIME setup
-        sm = SMIME.SMIME()
-        sm.set_x509_stack(x)
-        sm.set_cipher(SMIME.Cipher('aes_128_cbc'))
+        sm = self.get_encrypt_ctx(receiver_name)
 
         # encrypt data
         bdata = BIO.MemoryBuffer(plaintext)
@@ -199,17 +164,13 @@ class CMSTool:
 
     def decrypt(self, ciphtext, receiver_name):
         """Decrypt message.
-        
+
         Requires private key and it's cert.
 
         Returns decrypted message.
         """
 
-        # load key
-        sm = SMIME.SMIME()
-        sm.load_key_bio(
-                self.ks.load_key_bio(receiver_name),
-                self.ks.load_cert_bio(receiver_name))
+        sm = self.get_decrypt_ctx(receiver_name)
 
         # decrypt
         bdata = BIO.MemoryBuffer(ciphtext)
@@ -239,6 +200,107 @@ class CMSTool:
         """
         body = self.decrypt(ciphertext, receiver_name)
         return self.verify(None, body, ca_name, detached=False)
+
+    def get_signature_info(self, sm, pk):
+        """Returns dict of info fields."""
+
+        sign_stack = pk.get0_signers(sm.x509_stack)
+        crt0 = sign_stack.pop()
+        inf = {}
+        inf['not_before'] = crt0.get_not_before().get_datetime()
+        inf['not_after'] = crt0.get_not_after().get_datetime()
+        inf['serial'] = crt0.get_serial_number()
+        inf['version'] = crt0.get_version()
+        subj = crt0.get_subject()
+        inf['subject'] = subj.as_text()
+        for k in ['C', 'ST', 'CN', 'O', 'L', 'emailAddress']:
+            if hasattr(subj, k):
+                inf[k] = getattr(subj, k)
+
+        # disallow multiple certs in signature - dunno when it happens
+        if sign_stack.pop():
+            raise Exception('Confused by multiple certs in signature')
+
+        return inf
+
+    def get_sign_ctx(self, sender_name):
+        """Return SMIME context for signing."""
+
+        ck = ('S', sender_name)
+        if ck in self.cache:
+            return self.cache[ck]
+
+        # setup signature key
+        sm = SMIME.SMIME()
+        sm.load_key_bio(
+                self.ks.load_key_bio(sender_name),
+                self.ks.load_cert_bio(sender_name))
+
+        if CACHE_KEYS:
+            self.cache[ck] = sm
+        return sm
+
+    def get_verify_ctx(self, ca_name):
+        """Return SMIME context for verification."""
+
+        ck = ('V', ca_name)
+        if ck in self.cache:
+            return self.cache[ck]
+
+        # load ca cert(s)
+        ca_crt = self.ks.load_cert_obj(ca_name)
+        xk = X509.X509_Stack()
+        xk.push(ca_crt)
+        xs = X509.X509_Store()
+        xs.add_cert(ca_crt)
+
+        # init SMIME object
+        sm = SMIME.SMIME()
+        sm.set_x509_stack(xk)
+        sm.set_x509_store(xs)
+
+        if CACHE_KEYS:
+            self.cache[ck] = sm
+        return sm
+
+    def get_encrypt_ctx(self, receiver_name):
+        """Return SMIME context for encryption."""
+
+        ck = ('E', receiver_name)
+        if ck in self.cache:
+            return self.cache[ck]
+
+        # here we could add several certs
+        crt = self.ks.load_cert_obj(receiver_name)
+        x = X509.X509_Stack()
+        x.push(crt)
+
+        # SMIME setup
+        sm = SMIME.SMIME()
+        sm.set_x509_stack(x)
+        sm.set_cipher(SMIME.Cipher('aes_128_cbc'))
+
+        if CACHE_KEYS:
+            self.cache[ck] = sm
+        return sm
+
+    def get_decrypt_ctx(self, receiver_name):
+        """Return SMIME context for decryption."""
+
+        ck = ('D', receiver_name)
+        if ck in self.cache:
+            return self.cache[ck]
+
+        # load key
+        sm = SMIME.SMIME()
+        sm.load_key_bio(
+                self.ks.load_key_bio(receiver_name),
+                self.ks.load_cert_bio(receiver_name))
+
+        if CACHE_KEYS:
+            self.cache[ck] = sm
+        return sm
+
 
 #
 # CC-specific crypto conf
@@ -404,6 +466,7 @@ class TestStore(KeyStore):
         fn = os.path.basename(fn)
         return self.keys[fn].replace(' '*8, '')
 
+
 def test():
     msg = """{ "foo": "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaar" }\n"""
 
@@ -433,19 +496,12 @@ def test():
     assert txt == msg
     print 'OK'
 
-    print 'sign_and_encrypt'
-    enc = c.sign_and_encrypt(msg, 'user1', 'server')
-    assert len(enc) > len(msg)
-    print 'decrypt_and_verify'
-    msg2, inf = c.decrypt_and_verify(enc, 'server', 'ca')
-    assert msg == msg2
-    print inf
-    print 'OK'
 
 def bench():
     msg = """{ "foo": "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaar" }\n"""
-    msg = msg * 500
+    msg = msg * 50
     c = CMSTool(TestStore())
+    #c = CMSTool(KeyStore('./keys', './keys'))
     import time
 
     print 'msg len', len(msg)
@@ -502,6 +558,7 @@ def bench():
         print 'rate', count / (0.0 + now - start)
 
     print 'OK'
+
 
 if __name__ == '__main__':
     test()
