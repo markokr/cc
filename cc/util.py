@@ -7,17 +7,20 @@ import errno
 __all__ = ['write_atomic', 'set_nonblocking', 'set_cloexec']
 
 def write_atomic(fn, data, bakext=None):
-    """Write with rename."""
+    """Write text file with rename."""
 
     # link old data to bak file
     if bakext:
+        if bakext.find('/') >= 0:
+            raise Exception ("invalid bakext")
+        fnb = fn + bakext
         try:
-            os.remove(fn + bakext)
+            os.unlink(fnb)
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
         try:
-            os.link(fn, fn + bakext)
+            os.link(fn, fnb)
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
@@ -56,4 +59,3 @@ def set_cloexec(fd, onoff):
     else:
         flags &= ~fcntl.FD_CLOEXEC
     fcntl.fcntl(fd, fcntl.F_SETFL, flags)
-
