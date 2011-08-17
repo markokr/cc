@@ -2,11 +2,12 @@
 === SODI container objects prototype ===
 version 1
 
-All data is stored as text in json format. Helper functions and
-classes are provided in this module together with usage documentation. See
-also func calling demo at the end of this file.
+All data is stored as text in json format. Helper functions and classes are
+provided in this module together with usage documentation.
+See also func calling demo at the end of this file.
 
-*** Compatible with dbdict (dict with items accessibe via attributes)
+
+*** Compatible with dbdict (dict with items accessible via attributes)
 
 >>> x = Struct()
 >>> x.field1 = 'test'
@@ -28,13 +29,14 @@ also func calling demo at the end of this file.
 
 
 *** Sub dicts in json are automatically converted to Struct objects on creation
-(note that sting values are stored as unicode, that is the standard behaviour of
-json)
+(note that string values are stored as unicode, that is the standard behaviour
+of json)
 
 >>> x.field3.field4 == 'foo'
 True
 
-*** Typed structs can be defined using simple class defination syntax. All fields
+
+*** Typed structs can be defined using simple class definition syntax. All fields
 are instances of Field. Field types are given as arguments into Field initializator.
 When no field type is given, no automatic type conversion takes place
 
@@ -76,8 +78,8 @@ When no field type is given, no automatic type conversion takes place
 11
 
 
-*** Special "typed" list bulder list_of is introduced with method new for creating
-(and adding) new typed items
+*** Special "typed" list builder list_of is introduced with method new for
+creating (and adding) new typed items
 
 >>> class Item(Struct):
 ...     key = Field(str)
@@ -103,7 +105,7 @@ When no field type is given, no automatic type conversion takes place
 
 
 *** Helper function for struct building: build_struct. base structs inherit from
-can be given as args and fields as keyword args. If ordinary type is used in 
+can be given as args and fields as keyword args. If ordinary type is used in
 place of field, Field object is built automatically, using type as arg
 
 >>> Foo = build_struct(name = Field(str, default='nobody'), age = int)
@@ -155,7 +157,7 @@ else:
 
 
 class dbdict(dict):
-    """use dbdict from skytools instead for maximum compatibility"""      
+    """use dbdict from skytools instead for maximum compatibility"""
     def __getattr__(self, k):
         return self[k]
 
@@ -175,42 +177,42 @@ class _MetaStruct(type):
     """Builds struct classes with field initialization and type conversion
     based on descriptions (Struct and its subclasses)
     """
-    def __new__(cls, name, bases, attrs):        
+    def __new__(cls, name, bases, attrs):
         _fields = {}
         _attrs = {}
         for attrname, attr in attrs.items():
             if isinstance(attr, Field):
                 _fields[attrname] = attr
             #elif not attrname.startswith('__'):
-            #    _fields[attrname] = Field(attr) 
+            #    _fields[attrname] = Field(attr)
             else:
                 _attrs[attrname] = attr
-                
+
         def __setitem__(self, k, v):
             if k in _fields:
                 v = _fields[k](v)
             dbdict.__setitem__(self, k, v)
-            
+
         def __init__(self, *p, **kw):
             for base in bases:
                 base.__init__(self, *p, **kw)
-                    
+
             for fieldname, field in _fields.iteritems():
                 self[fieldname] = field(self.get(fieldname))
-                
+
             for key, val in self.iteritems():
                 if not key in _fields:
                     if type(val) == dict:
                         self[key] = Struct(val)
                     elif type(val) == list:
-                        self[key] = list_of(Struct)(val)                    
-                
+                        self[key] = list_of(Struct)(val)
+
         _attrs.update({'__init__': __init__, '__setitem__':__setitem__})
         return super(_MetaStruct, cls).__new__(cls, name, bases, _attrs)
 
     def __init__(self, name, bases, attrs):
         super(_MetaStruct, self).__init__(name, bases, attrs)
-        
+
     def __add__(self, other):
         return type('CombinedStruct', (self, other), {})
 
@@ -234,13 +236,13 @@ class Field(object):
                 _default = _default()
             _value = _default
         if self.type is not None and type(_value) != self.type:
-            _args = [_value] if _value else [] 
+            _args = [_value] if _value else []
             _value = self.type(*_args)
         return _value
 
 
 class Struct(dbdict):
-    """Base class. All sutructure components must inherit or
+    """Base class. All structure components must inherit or
     instantiate Struct. Magic happens in metaclass.
     """
     __metaclass__ = _MetaStruct
@@ -253,7 +255,7 @@ class Struct(dbdict):
     def dump_json(self):
         """dumps object to json string"""
         return json.dumps(self)
-    
+
     def getas(self, name, cast = None, default = None):
         """get value by name with optional casting and default"""
         value = self.get(name, default)
@@ -275,11 +277,11 @@ def list_of(itemtype):
             for i, item in enumerate(self):
                 if not isinstance(item, itemtype):
                     self[i] = itemtype(item)
-            
+
         def new(self, *p, **kw):
             item = itemtype(*p, **kw)
             self.append(item)
-            return item                
+            return item
     return ListHandler
 
 
@@ -301,16 +303,16 @@ def func_call_example():
     and result processing
     """
     class Context(Struct):
-        username = Field(str, default = lambda: 'egon')        
-        
+        username = Field(str, default = lambda: 'egon')
+
     class AbstractCall(Struct):
         func = Field(str)
-        context = Field(Context) 
-        
+        context = Field(Context)
+
     class AbstractResult(Struct):
         code = Field(int, default = 200)
         msg = Field(str, default = 'OK')
-        
+
     # testcall with json as arg and result
     def func_call(json_arg):
         call = AbstractCall.from_json(json_arg)
@@ -323,7 +325,7 @@ def func_call_example():
                         rows = Field(list_of(Row)),
                         created = Field(str, default = lambda: __import__('datetime').datetime.now()))
 
-        result = Result()        
+        result = Result()
         result.rows.new(id = 1, value = 'a')
         row = result.rows.new()
         row.id = 2
@@ -332,30 +334,29 @@ def func_call_example():
         row.value = 'c'
         result.rows.new({'id':4, 'value':'d'})
         return result.dump_json()
-    
-    # define concrete func call    
+
+    # define concrete func call
     Params = build_struct(hostname = Field(str), ip = Field(str))
     Call = build_struct(AbstractCall, params = Field(Params))
-    
+
     call = Call()
     call.func = 'public.test'
     call.params.hostname = 'dub-db1'
     call.params.ip ='192.168.1.1'
-    
+
     # create json, call and parse result json
     json_call_str = call.dump_json()
     print json_call_str
-    json_result_str = func_call(json_call_str)    
+    json_result_str = func_call(json_call_str)
     print json_result_str
     result = AbstractResult.from_json(json_result_str)
-    
+
     assert result.code == 200
     assert result.msg == 'OK'
     assert len(result.rows) == 4
     assert result.rows[0].id == 1
-    
+
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()    
+    doctest.testmod()
     func_call_example()
-
