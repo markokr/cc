@@ -1,7 +1,7 @@
 CC
 ==
 
-CC is ZMQ proxy for specific type of ZMQ messaages (CC messages).
+CC is ZMQ proxy for specific type of ZMQ messages (CC messages).
 
 It listens on single ZMQ socket, and processes messages
 by matching message type to handler.
@@ -14,7 +14,7 @@ administration, as any daemon can be written to be standalone.
 CC message
 ----------
 
-First quick intro to ZMQ messages: ZMQ transports blobs,
+First quick intro to ZMQ messages:  ZMQ transports blobs,
 with header that specifies length for the blob and whether
 it is last blob or not.  So one logical message can contain
 one or more blobs.  ZMQ calls it "multipart message".
@@ -41,11 +41,11 @@ Message types
 -------------
 
 Message type contains dot-separated multiple ids.
-So routing patter can be applied to full id or only
+So routing pattern can be applied to full id or only
 some prefix parts.
 
 Eg. id 'pub.infofile' can be routed either full
-patter or simply 'pub', which will route all 'pub'
+pattern or simply 'pub', which will route all 'pub'
 messages to some handler.
 
 - pub.infofile, pub.state, pub.stats
@@ -68,6 +68,7 @@ cc.handler.infowriter: writes infofiles
 cc.handler.locallogger: writes logfiles
 cc.handler.jobmgr: local jobs [daemons / tasks] query it for config and keepalive
 
+
 CC daemons
 ----------
 
@@ -81,10 +82,11 @@ Examples:
 - cc.daemon.taskrunner: registers on taskrouter, waits for tasks
 - cc.daemon.discovery: discovers things
 
+
 Patterns
 --------
 
-Nether handlers nor daemons need to be tied/managed by CC,
+Neither handlers nor daemons need to be tied/managed by CC,
 they can always be launched as standalone services.
 They are managed with CC only for easier administration.
 
@@ -126,11 +128,11 @@ cms-keystore:
   ./private/server.key
 
 cms-sign:
-  Key name to sign as.  requires files ./$key.crt and ./private/$key.key
+  Key name to sign as.  Requires files ./$key.crt and ./private/$key.key
   under keystore.  If set, all outgoing messages are signed.
 
 cms-verify-ca:
-  Cert name to use to signature verification.  requires
+  Cert name to use to signature verification.  Requires
   ./$name.crt under keystore.  If set, incoming messages
   must be signed under key certified by CA.
 
@@ -182,5 +184,3 @@ crypto
   - client: have timestamp in message (done)
   - server: keep track of msgids for last 5m, drop dup messages
   - server: check message timestamp, drop old messages
-
-
