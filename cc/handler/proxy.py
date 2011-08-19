@@ -2,7 +2,7 @@
 import zmq
 
 from cc.handler import CCHandler
-from cc.message import CCMessage
+from cc.message import zmsg_size
 from cc.stream import CCStream
 
 __all__ = ['ProxyHandler']
@@ -22,7 +22,6 @@ class ProxyHandler(CCHandler):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)
 
         s = self.make_socket()
-        s.setsockopt(zmq.LINGER, 500)
         self.stream = CCStream(s, ccscript.ioloop)
         self.stream.on_recv(self.on_recv)
 
@@ -44,9 +43,8 @@ class ProxyHandler(CCHandler):
         """Got message from remote CC, send to client."""
         try:
             self.log.debug('ProxyHandler.handler.on_recv')
-            cmsg = CCMessage(zmsg)
             self.stat_increase('count')
-            self.stat_increase('bytes', cmsg.get_size())
+            self.stat_increase('bytes', zmsg_size(zmsg))
             self.cclocal.send_multipart(zmsg)
         except:
             self.log.exception('ProxyHandler.on_recv crashed, dropping msg')
@@ -54,4 +52,3 @@ class ProxyHandler(CCHandler):
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
         self.stream.send_cmsg(cmsg)
-
