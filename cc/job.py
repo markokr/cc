@@ -109,8 +109,7 @@ class CCJob(skytools.DBScript):
             raise skytools.UsageError('Need either --cctask or --ccdaemon')
 
         conf = self.fetch_config()
-        return skytools.Config(self.service_name, None, user_defs = conf,
-                               override = self.cf_override)
+        return skytools.Config(self.service_name, None, user_defs = conf)
 
     def _boot_daemon(self):
         # close ZMQ context/thread before forking to background
