@@ -33,7 +33,7 @@ class NoLog:
     def warning(self, *args): pass
     def debug(self, *args): pass
 
-class CCJob(skytools.BaseScript):
+class CCJob(skytools.DBScript):
     zctx = None
     cc = None
 
@@ -86,6 +86,14 @@ class CCJob(skytools.BaseScript):
         cmsg = self.xtx.create_cmsg(msg)
         self.cc.send_multipart(cmsg.zmsg)
 
+    def fetch_config(self):
+        # query config
+        msg = JobConfigRequestMessage(
+                req = 'job.config',
+                job_name = self.job_name)
+        rep = self.ccquery(msg)
+        return rep.config
+
     def load_config(self):
         """Loads and returns skytools.Config instance.
 
@@ -100,15 +108,9 @@ class CCJob(skytools.BaseScript):
         else:
             raise skytools.UsageError('Need either --cctask or --ccdaemon')
 
-        # query config
-        msg = JobConfigRequestMessage(
-                req = 'job.config',
-                job_name = self.job_name)
-        rep = self.ccquery(msg)
-        conf = rep.config
-        print('Got config: %r' % conf)
+        conf = self.fetch_config()
         return skytools.Config(self.service_name, None, user_defs = conf,
-                               override = self.cf_operride)
+                               override = self.cf_override)
 
     def _boot_daemon(self):
         # close ZMQ context/thread before forking to background
