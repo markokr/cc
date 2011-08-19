@@ -36,7 +36,7 @@ class CCHandler(object):
 
     def handle_msg(self, rmsg):
         """Process single message"""
-        pass
+        raise NotImplementedError
 
     def stop(self):
         """Called on process shutdown."""
@@ -65,4 +65,3 @@ def cc_handler_lookup(name, cur_role):
     if cur_role not in cls.CC_ROLES:
         raise Exception('Handler %s cannot be run in role %s' % (name, cur_role))
     return cls
-
