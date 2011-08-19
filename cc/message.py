@@ -5,7 +5,7 @@ __all__ = ['CCMessage']
 
 class CCMessage(object):
     """CC multipart message.
-    
+
     Format is similar to usual REQ+REP sockets:
 
     - id_hopX
@@ -49,10 +49,7 @@ class CCMessage(object):
         return self.zmsg[self.rpos + 3]
 
     def get_size(self):
-        n = 0
-        for p in self.zmsg:
-            n += len(p)
-        return n
+        return zmsg_size (self.zmsg)
 
     def __str__(self):
         x = repr(self.zmsg)
@@ -83,3 +80,9 @@ class CCMessage(object):
         self.get_payload(xtx)
         return self.signature
 
+
+def zmsg_size (zmsg):
+    n = 0
+    for p in zmsg:
+        n += len(p)
+    return n
