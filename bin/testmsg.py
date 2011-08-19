@@ -20,7 +20,7 @@ typ = sys.argv[1]
 if typ == 'info':
     msg = {'req': 'pub.infofile', 'msg': 'Blah'}
 elif typ == 'task':
-    msg = {'req': 'req.task.send', 'host': 'hostname'}
+    msg = {'req': 'task.send', 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': '55'}
 elif typ == 'log':
     msg = {'req': 'pub.log', 'host': 'hostname', 'msg': 'Foo'}
 elif typ == 'db':
