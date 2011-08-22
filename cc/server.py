@@ -101,6 +101,7 @@ class CCServer(skytools.BaseScript):
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
+        self.log.debug('handle_cc_recv: %r', zmsg)
         try:
             cmsg = CCMessage(zmsg)
         except:
@@ -108,8 +109,6 @@ class CCServer(skytools.BaseScript):
             return
 
         try:
-            self.log.debug('handle_cc_recv: %r', zmsg)
-            cmsg = CCMessage(zmsg)
             dst = cmsg.get_dest()
             route = tuple(dst.split('.'))
 
@@ -122,11 +121,12 @@ class CCServer(skytools.BaseScript):
                     h.handle_msg(cmsg)
                     cnt += 1
             if cnt == 0:
-                self.log.warning('dropping msg, no route: %s', cmsg.get_dest())
+                self.log.warning('dropping msg, no route: %s', dst)
 
             # update stats
             self.stat_increase('count')
             self.stat_increase('bytes', cmsg.get_size())
+
         except Exception:
             self.log.exception('handle_cc_recv crashed, dropping msg: %s', cmsg.get_dest())
 
@@ -154,4 +154,3 @@ class CCServer(skytools.BaseScript):
 if __name__ == '__main__':
     script = CCServer('ccserver', sys.argv[1:])
     script.start()
-
