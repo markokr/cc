@@ -42,7 +42,7 @@ class ProxyHandler(CCHandler):
     def on_recv(self, zmsg):
         """Got message from remote CC, send to client."""
         try:
-            self.log.debug('ProxyHandler.handler.on_recv')
+            self.log.debug('ProxyHandler.on_recv')
             self.stat_increase('count')
             self.stat_increase('bytes', zmsg_size(zmsg))
             self.cclocal.send_multipart(zmsg)
