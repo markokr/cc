@@ -60,6 +60,8 @@ ksize=2048
 ksize=1024
 ksize=512
 
+days=10240
+
 run openssl genrsa -out user1.key $ksize
 
 run openssl genrsa -out ca.key $ksize
@@ -69,7 +71,7 @@ run openssl genrsa -out server.key $ksize
 run openssl genrsa -out confdb.key $ksize
 
 # self-signed cert
-run_req -new -x509 -key ca.key -out ca.crt -- C=EE L=Tartu O=Skype OU=TempCA CN="Test CA Server"
+run_req -new -x509 -days $days -key ca.key -out ca.crt -- C=EE L=Tartu O=Skype OU=TempCA CN="Test CA Server"
 
 # cert reqs
 run_req -new -key server.key -out server.csr -- C=EE L=Tartu O=Skype OU=DubColo CN="Host 1"
@@ -77,7 +79,7 @@ run_req -new -key confdb.key -out confdb.csr -- C=EE L=Tartu O=Skype OU=Service 
 run_req -new -key user1.key  -out user1.csr  -- C=EE L=Tartu O=Skype OU=SiteOps CN="User Name" emailAddress="user1@skype.net"
 
 # accept certs
-run_ca -days 1024 -policy pol-user   -in user1.csr  -out user1.crt
-run_ca -days 1024 -policy pol-server -in server.csr -out server.crt
-run_ca -days 1024 -policy pol-server -in confdb.csr -out confdb.crt
+run_ca -days $days -policy pol-user   -in user1.csr  -out user1.crt
+run_ca -days $days -policy pol-server -in server.csr -out server.crt
+run_ca -days $days -policy pol-server -in confdb.csr -out confdb.crt
 

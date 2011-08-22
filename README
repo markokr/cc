@@ -152,11 +152,10 @@ TODO
 
 - jobmgr: track keepalive, relaunch if dead?
 - ccjob: implement task logic (just job_name picking?)
-- taskexec: implement
+- generic msg replay avoidance
 
 - api: refactor zmq script w/ ioloop out
 - api: common zmq socket tuning
-- api: rename 'req'.  (mtype, dest, type, target?)
 
 task poller
 -----------

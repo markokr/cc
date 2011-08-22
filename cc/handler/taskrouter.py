@@ -101,6 +101,6 @@ class TaskRouter(CCHandler):
         self.route_map[hr.host] = hr
 
         # FIXME: proper reply?
-        zans = route + [''] + ['OK']
-        self.cclocal.send_multipart(zans)
+        #zans = route + [''] + ['OK']
+        #self.cclocal.send_multipart(zans)
 
