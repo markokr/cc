@@ -25,6 +25,10 @@ elif typ == 'log':
     msg = {'req': 'pub.log', 'host': 'hostname', 'msg': 'Foo'}
 elif typ == 'db':
     msg = {'req': 'confdb', 'host': 'hostname', 'function': 'public.test_json'}
+elif typ == 'job':
+    msg = {'req': 'job.config'}
+    msg = {'req': 'job.config', 'job_name': 'qwerty'}
+    msg = {'req': 'job.config', 'job_name': 'd:taskrunner'}
 else:
     print 'unknown type'
     sys.exit(0)
@@ -37,4 +41,3 @@ sock.send_multipart(zmsg)
 
 res = sock.recv_multipart()
 print 'response:', repr(res)
-

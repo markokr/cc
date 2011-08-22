@@ -2,11 +2,11 @@
 import os, subprocess, select, fcntl, signal
 
 from zmq.eventloop.ioloop import PeriodicCallback
-from cc.handler import CCHandler
-from cc.util import set_nonblocking
-from cc.reqs import JobConfigReplyMessage
-from cc.message import CCMessage
 from cc.crypto import CryptoContext
+from cc.handler import CCHandler
+from cc.message import CCMessage
+from cc.reqs import ErrorMessage, JobConfigReplyMessage
+from cc.util import set_nonblocking
 
 import skytools
 
@@ -54,7 +54,6 @@ class JobState:
             else:
                 self.log.info('handle_timer: %s is dead', self.jname)
 
-
     def start(self):
         # unsure about the best way to specify target
         mod = self.jcf.get('module', '')
@@ -69,7 +68,7 @@ class JobState:
             raise skytools.UsageError('dunno how to launch class')
 
         self.log.info('Launching %s: %s', self.jname, " ".join(cmd))
-        self.proc = subprocess.Popen(cmd, close_fds=True,
+        self.proc = subprocess.Popen(cmd, close_fds = True,
                                 stdin = open(os.devnull, 'rb'),
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.STDOUT)
@@ -85,6 +84,7 @@ class JobState:
             skytools.signal_pidfile(self.pidfile, signal.SIGINT)
         except:
             self.log.exception('signal_pidfile failed')
+
 
 class JobMgr(CCHandler):
     """Provide config to local daemons / tasks."""
@@ -108,7 +108,7 @@ class JobMgr(CCHandler):
         jstate = JobState(jname, jcf, self.log, self.local_url, self.ioloop, self.pidfiledir, self.xtx)
         self.jobs[jname] = jstate
         jstate.start()
-        
+
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
 
@@ -118,18 +118,27 @@ class JobMgr(CCHandler):
             return
 
         if data.req == 'job.config':
-            job = self.jobs[data.job_name]
-            msg = JobConfigReplyMessage(
-                req = 'job.config',
-                job_name = data.job_name,
-                config = job.cfdict)
-            crep = self.xtx.create_cmsg(msg)
+            if not hasattr (data, 'job_name'):
+                msg = ErrorMessage(
+                    req = data.req,
+                    msg = "Missing job_name")
+            elif not data.job_name in self.jobs:
+                msg = ErrorMessage(
+                    req = data.req,
+                    job_name = data.job_name,
+                    msg = "Unknown job_name")
+            else:
+                job = self.jobs[data.job_name]
+                msg = JobConfigReplyMessage(
+                    req = data.req,
+                    job_name = data.job_name,
+                    config = job.cfdict)
         else:
-            jdict = {
-                'req': data.req,
-                'job_name': data.job_name,
-                'msg': 'Unsupported req'}
-            crep = self.xtx.create_cmsg(jdict)
+            msg = ErrorMessage(
+                req = data.req,
+                #job_name = data.job_name,
+                msg = 'Unsupported req')
+        crep = self.xtx.create_cmsg(msg)
         crep.take_route(cmsg)
         self.cclocal.send_cmsg(crep)
         self.log.info('JobMgr answer: %s', crep)

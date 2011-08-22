@@ -13,6 +13,9 @@ class BaseMessage(Struct):
         cmsg = CCMessage(jmsg = self)
         sock.send_multipart(cmsg.zmsg)
 
+class ErrorMessage (BaseMessage):
+    msg = Field(str)
+
 class LogMessage(BaseMessage):
     "log.*"
     level = Field(str)
@@ -51,4 +54,3 @@ class TaskSendMessage(BaseMessage):
 
 def parse_json(js):
     return Struct.from_json(js)
-
