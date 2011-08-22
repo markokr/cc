@@ -1,6 +1,4 @@
 
-from cc import json
-
 __all__ = ['CCMessage']
 
 class CCMessage(object):
