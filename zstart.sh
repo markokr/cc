@@ -23,8 +23,8 @@ mkdir -p /tmp/infofiles
 while [ True ]; do
     sleep 1
     echo "checking if infofile arrived"
-    ls /tmp/infofiles/* || true
-    grep -E 'ERR|WARN|CRIT|Exc' /home/marko/log/*.log || true
+    ls /tmp/infofiles/ || true
+    grep -E 'ERR|WARN|CRIT|Exc' ~/log/*.log || true
 done
 
 # sh kill.sh

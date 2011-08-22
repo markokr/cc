@@ -1,11 +1,11 @@
 #! /bin/sh
 
-set -e
+#set -e
 
 for f in ~/pid/*.pid; do
   if test -f "$f"; then
     echo "killing $f"
-    kill `cat $f`
+    kill "`cat $f`"
   fi
 done
 
@@ -17,5 +17,3 @@ pkill -f cc.daemon
 sleep 1
 
 ps aux|grep '[p]ython'
-
-
