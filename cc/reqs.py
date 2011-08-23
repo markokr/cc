@@ -9,10 +9,6 @@ class BaseMessage(Struct):
     req = Field(str)
     hostname = Field(str, default = gethostname())
 
-    def send_to(self, sock):
-        cmsg = CCMessage(jmsg = self)
-        sock.send_multipart(cmsg.zmsg)
-
 class ErrorMessage (BaseMessage):
     msg = Field(str)
 
@@ -49,7 +45,6 @@ class TaskRegisterMessage(BaseMessage):
 class TaskSendMessage(BaseMessage):
     "req.task.send"
     host = Field(str)
-
 
 
 def parse_json(js):
