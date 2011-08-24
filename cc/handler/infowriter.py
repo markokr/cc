@@ -20,7 +20,7 @@ class InfoWriter(CCHandler):
         super(InfoWriter, self).__init__(hname, hcf, ccscript)
 
         self.dstdir = hcf.getfile('dstdir')
-        self.make_subdirs = hcf.getint('host-subdirs', 0)
+        self.host_subdirs = hcf.getboolean('host-subdirs', 0)
         self.bakext = hcf.get('bakext', '')
 
     def handle_msg(self, cmsg):
@@ -37,7 +37,7 @@ class InfoWriter(CCHandler):
         host = host.replace('/', '_')
 
         # decide destination file
-        if self.make_subdirs:
+        if self.host_subdirs:
             subdir = os.path.join(self.dstdir, host)
             dstfn = os.path.join(subdir, fn)
             if not os.path.isdir(subdir):
@@ -45,13 +45,15 @@ class InfoWriter(CCHandler):
         else:
             dstfn = os.path.join(self.dstdir, '%s--%s' % (host, fn))
 
-        # check if file exist and is older
+        # check if file exists and is older
         try:
             st = os.stat(dstfn)
             if st.st_mtime == mtime:
                 self.log.info('InfoWriter.handle_msg: %s mtime matches, skipping', dstfn)
+                return
             elif st.st_mtime > mtime:
                 self.log.info('InfoWriter.handle_msg: %s mtime newer, skipping', dstfn)
+                return
         except OSError:
             pass
 
@@ -59,4 +61,3 @@ class InfoWriter(CCHandler):
         self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)
         write_atomic(dstfn, data['data'], self.bakext)
         os.utime(dstfn, (mtime, mtime))
-
