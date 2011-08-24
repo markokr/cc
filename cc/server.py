@@ -74,7 +74,7 @@ class CCServer(skytools.BaseScript):
             if hname in self.handlers:
                 h = self.handlers[hname]
             else:
-                self.log.info('New handler: %s/%s', r, hname)
+                self.log.info('CCServer.startup: New route def: %s = %s', r, hname)
                 hcf = self.cf.clone(hname)
 
                 # renamed option: plugin->handler
@@ -94,18 +94,18 @@ class CCServer(skytools.BaseScript):
         """Add route to handler"""
 
         r = tuple(rname.split('.'))
-        self.log.info('add_handler: %s -> %s', repr(r), handler.hname)
+        self.log.info('CCServer.add_handler: %s -> %s', repr(r), handler.hname)
         rhandlers = self.routes.setdefault(r, [])
         rhandlers.append(handler)
 
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
-        self.log.debug('handle_cc_recv: %r', zmsg)
+        self.log.debug('CCServer.handle_cc_recv: %r', zmsg)
         try:
             cmsg = CCMessage(zmsg)
         except:
-            self.log.exception('Invalid ZMQ format')
+            self.log.exception('CCServer.handle_cc_recv: Invalid ZMQ format')
             return
 
         try:
@@ -117,23 +117,23 @@ class CCServer(skytools.BaseScript):
             for n in range(1, 1 + len(route)):
                 p = route[ : n]
                 for h in self.routes.get(p, []):
-                    self.log.debug('handler=%s', h.hname)
+                    self.log.debug('CCServer.handle_cc_recv: calling handler %s', h.hname)
                     h.handle_msg(cmsg)
                     cnt += 1
             if cnt == 0:
-                self.log.warning('dropping msg, no route: %s', dst)
+                self.log.warning('CCServer.handle_cc_recv: dropping msg, no route: %s', dst)
 
             # update stats
             self.stat_increase('count')
             self.stat_increase('bytes', cmsg.get_size())
 
         except Exception:
-            self.log.exception('handle_cc_recv crashed, dropping msg: %s', cmsg.get_dest())
+            self.log.exception('CCServer.handle_cc_recv crashed, dropping msg: %s', cmsg.get_dest())
 
     def work(self):
         """Default work loop simply runs ioloop."""
         self.set_single_loop(1)
-        self.log.info('Starting ioloop')
+        self.log.info('CCServer.work: Starting IOLoop')
         try:
             self.ioloop.start()
         except zmq.ZMQError, d:
