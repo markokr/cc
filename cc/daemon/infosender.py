@@ -16,17 +16,17 @@ from cc.reqs import InfofileMessage
 class InfoStamp:
     def __init__(self, fn, st):
         self.filename = fn
-        self.st = st
+        self.filestat = st
         self.modified = 1
         self.checked = 0
 
     def check_send(self, st):
-        if (st.st_mtime != self.st.st_mtime
-                or st.st_size != self.st.st_size
+        if (st.st_mtime != self.filestat.st_mtime
+                or st.st_size != self.filestat.st_size
                 or st.st_size == 0):
             # st changed, new mod
             self.modified = 1
-            self.st = st
+            self.filestat = st
             return 0
         elif self.modified:
             return 1
@@ -39,6 +39,7 @@ class InfofileCollector(CCDaemon):
         super(InfofileCollector, self).reload()
 
         self.infodir = self.cf.getfile('infodir')
+        self.infomask = self.cf.get('infomask')
 
     def startup(self):
         super(InfofileCollector, self).startup()
@@ -63,13 +64,12 @@ class InfofileCollector(CCDaemon):
         msg = InfofileMessage(
                 req = 'pub.infofile',
                 filename = os.path.basename(fs.filename),
-                hostname = self.hostname,
-                mtime = fs.st.st_mtime,
+                mtime = fs.filestat.st_mtime,
                 data = body)
         self.ccpublish(msg)
 
     def find_new(self):
-        fnlist = glob.glob(self.infodir + '/info.*')
+        fnlist = glob.glob (os.path.join (self.infodir, self.infomask))
         newlist = []
         for fn in fnlist:
             st = os.stat(fn)
@@ -83,7 +83,6 @@ class InfofileCollector(CCDaemon):
         return newlist
 
     def work(self):
-        self.hostname = socket.gethostname()
         self.connect_cc()
         newlist = self.find_new()
         for fs in newlist:
@@ -93,4 +92,3 @@ class InfofileCollector(CCDaemon):
 if __name__ == '__main__':
     s = InfofileCollector('infofile_collector', sys.argv[1:])
     s.start()
-
