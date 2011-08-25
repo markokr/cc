@@ -7,19 +7,17 @@
 
 """
 
-import sys
-import os, os.path
 import subprocess
+import sys
 
 from cc import json
 from cc.daemon import CCDaemon
 from cc.message import CCMessage
+from cc.reqs import TaskRegisterMessage
+from cc.stream import CCStream
 
 import zmq, zmq.eventloop
 from zmq.eventloop.ioloop import PeriodicCallback
-
-from cc import json
-from cc.stream import CCStream
 
 import skytools
 
@@ -38,9 +36,9 @@ class TaskRunner(CCDaemon):
         self.ccs.on_recv(self.handle_cc_recv)
 
         self.local_id = self.cf.get('local-id', self.hostname)
+        self.maint_period = self.cf.getint ('maint-period', 5 * 60)
 
         self.periodic_reg()
-        self.maint_period = 5*60
         self.timer = PeriodicCallback(self.periodic_reg, self.maint_period*1000, self.ioloop)
         self.timer.start()
 
@@ -50,17 +48,16 @@ class TaskRunner(CCDaemon):
             cmsg = CCMessage(zmsg)
             self.launch_task(cmsg)
         except:
-            self.log.exception('task launcher crashed')
+            self.log.exception('TaskRunner.handle_cc_recv crashed, dropping msg')
 
     def launch_task(self, cmsg):
         """Parse and execute task."""
 
-        self.log.info("TaskRunner: %s", cmsg)
+        self.log.info("TaskRunner.launch_task: %s", cmsg)
 
         msg = cmsg.get_payload(self.xtx)
-        js = msg.dump_json()
 
-        jname = 'task_%s' % msg.task_id
+        jname = 'task_%i' % msg.task_id
         info = {'task': msg,
                 'config': {
                     'pidfile': self.pidfile + '.' + jname,
@@ -74,22 +71,21 @@ class TaskRunner(CCDaemon):
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         out = p.communicate(js)[0]
-        self.log.info('launch task: %s - ret=%d, out=%r', ' '.join(cmd), p.returncode, out)
+        self.log.info('Launched task: %s', ' '.join(cmd))
+        self.log.info('Task returned: rc=%d, out=%r', p.returncode, out)
 
     def work(self):
         """Default work loop simply runs ioloop."""
-        self.log.info('Starting ioloop')
+        self.log.info('Starting IOLoop')
         self.ioloop.start()
         return 1
 
     def periodic_reg(self):
         """Register taskrunner in central router."""
-        req = {'req': 'task.register', 'host': 'hostname'}
-        zmsg = ['', req['req'], json.dumps(req)]
-        self.log.info('maint: %s', repr(zmsg))
-        self.cc.send_multipart(zmsg)
+        msg = TaskRegisterMessage (req = 'task.register', host = self.local_id)
+        self.log.info ('TaskRunner.periodic_reg: %s', repr(msg))
+        self.ccpublish (msg)
 
 if __name__ == '__main__':
     s = TaskRunner('task_runner', sys.argv[1:])
     s.start()
-
