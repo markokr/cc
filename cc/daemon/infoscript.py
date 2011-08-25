@@ -62,12 +62,11 @@ class InfoScript(CCDaemon):
                               data = res)
         self.ccpublish(msg)
 
-
     def work(self):
+        #self.connect_cc()
         self.ioloop.start()
         return 1
 
 if __name__ == '__main__':
     script = InfoScript('infoscript', sys.argv[1:])
     script.start()
-

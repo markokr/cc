@@ -4,8 +4,11 @@ CC daemon / task
 """
 
 import logging
-import zmq
 import socket
+
+import zmq
+
+import skytools
 
 from cc import json
 from cc.message import CCMessage
@@ -13,8 +16,6 @@ from cc.message import CCMessage
 from cc.reqs import JobConfigRequestMessage, JobConfigReplyMessage, LogMessage, BaseMessage
 
 from cc.crypto import CryptoContext
-
-import skytools
 
 __all__ = ['CCJob', 'CCDaemon', 'CCTask']
 
@@ -28,10 +29,11 @@ class CallbackLogger(logging.Handler):
         self.log_cb(rec)
 
 class NoLog:
-    def error(self, *args): pass
+    def debug(self, *args): pass
     def info(self, *args): pass
     def warning(self, *args): pass
-    def debug(self, *args): pass
+    def error(self, *args): pass
+    def critical(self, *args): pass
 
 class CCJob(skytools.DBScript):
     zctx = None
@@ -52,6 +54,8 @@ class CCJob(skytools.DBScript):
 
     def emit_log(self, rec):
         if not self.cc:
+            self.connect_cc()
+        if not self.cc:
             return
         msg = LogMessage(
             req = 'log.%s' % rec.levelname.lower(),
@@ -63,15 +67,13 @@ class CCJob(skytools.DBScript):
             pid = rec.process,
             line = rec.lineno,
             function = rec.funcName)
-        if not self.cc:
-            self.connect_cc()
         cmsg = self.logxtx.create_cmsg(msg)
         self.cc.send_multipart(cmsg.zmsg)
 
     def ccquery(self, msg):
         """Sends query to CC, waits for answer."""
-        if not self.cc:
-            self.connect_cc()
+        assert isinstance (msg, BaseMessage)
+        if not self.cc: self.connect_cc()
 
         cmsg = self.xtx.create_cmsg(msg)
         self.cc.send_multipart(cmsg.zmsg)
@@ -87,7 +89,7 @@ class CCJob(skytools.DBScript):
         self.cc.send_multipart(cmsg.zmsg)
 
     def fetch_config(self):
-        # query config
+        """ Query config """
         msg = JobConfigRequestMessage(
                 req = 'job.config',
                 job_name = self.job_name)
@@ -121,7 +123,7 @@ class CCJob(skytools.DBScript):
         if not self.zctx:
             self.zctx = zmq.Context()
         if not self.cc:
-            url = self.options.cc or 'tcp://127.0.0.1:10000'
+            url = self.options.cc or 'tcp://127.0.0.1:10000' # XXX: debug code
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.connect(url)
             self.cc.setsockopt(zmq.LINGER, 500)
@@ -157,4 +159,3 @@ class CCJob(skytools.DBScript):
             self.stat_dict[key] += increase
         else:
             self.stat_dict[key] = increase
-
