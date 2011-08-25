@@ -27,7 +27,7 @@ class HostRoute(object):
 
 class TaskRouter(CCHandler):
     """Keep track of host routes.
-    
+
     Clean old ones.
     """
 
@@ -36,10 +36,10 @@ class TaskRouter(CCHandler):
     def __init__(self, *args):
         super(TaskRouter, self).__init__(*args)
         self.route_map = {}
-        
+
         # 1 hr?
-        self.route_lifetime = 1 * 60 * 60
-        self.maint_period = 1 * 60
+        self.route_lifetime = self.cf.getint ('route-lifetime', 1 * 60 * 60)
+        self.maint_period = self.cf.getint ('maint-period', 1 * 60)
 
         self.timer = PeriodicCallback(self.do_maint, self.maint_period*1000, self.ioloop)
         self.timer.start()
@@ -58,7 +58,7 @@ class TaskRouter(CCHandler):
         elif req == 'task.send':
             self.send_host(host, cmsg)
         else:
-            self.log.warning('TaskRouter: unknown msg: %s', req)
+            self.log.warning('TaskRouter.handle_msg: unknown msg: %s', req)
 
     def do_maint(self):
         """Drop old routes"""
@@ -69,14 +69,14 @@ class TaskRouter(CCHandler):
             if now - hr.create_time > self.route_lifetime:
                 zombies.append(hr)
         for hr in zombies:
-            self.log.info('TaskRouter: deleting route for %s', hr.host)
+            self.log.info('TaskRouter.do_maint: deleting route for %s', hr.host)
             del self.route_map[hr.host]
 
     def send_host(self, host, cmsg):
         """Send message for task executor on host"""
 
         if host not in self.route_map:
-            self.log.info('TaskRouter: cannot route to %s', host)
+            self.log.info('TaskRouter.send_host: cannot route to %s', host)
             return
 
         # find ZMQ route
@@ -87,7 +87,7 @@ class TaskRouter(CCHandler):
         zmsg = hr.route + [''] + msg
 
         # send the message
-        self.log.info('TaskRouter: sending task to %s', host)
+        self.log.info('TaskRouter.send_host: sending task to %s', host)
         self.cclocal.send_multipart(zmsg)
 
         # FIXME: proper reply?
@@ -96,11 +96,10 @@ class TaskRouter(CCHandler):
 
     def register_host(self, host, route):
         """Remember ZMQ route for host"""
-        self.log.info('register_host(%s, %s)', repr(host), repr(route))
+        self.log.info('TaskRouter.register_host: (%s, %s)', repr(host), repr(route))
         hr = HostRoute(host, route)
         self.route_map[hr.host] = hr
 
         # FIXME: proper reply?
         #zans = route + [''] + ['OK']
         #self.cclocal.send_multipart(zans)
-
