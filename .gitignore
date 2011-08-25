@@ -4,6 +4,8 @@
 cc/*.pyc
 cc/handler/*.pyc
 cc/daemon/*.pyc
-var
+cc/task/*.pyc
 keys/*.crt
 keys/*.key
+
+var

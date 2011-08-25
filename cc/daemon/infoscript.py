@@ -63,7 +63,7 @@ class InfoScript(CCDaemon):
         self.ccpublish(msg)
 
     def work(self):
-        #self.connect_cc()
+        self.log.info("Starting IOLoop")
         self.ioloop.start()
         return 1
 

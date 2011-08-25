@@ -57,7 +57,7 @@ class JobState:
     def start(self):
         # unsure about the best way to specify target
         mod = self.jcf.get('module', '')
-        script = self.jcf.get('module', '')
+        script = self.jcf.get('script', '')
         cls = self.jcf.get('class', '')
         args = ['-d', '--cc', self.cc_url, '--ccdaemon', self.jname]
         if mod:

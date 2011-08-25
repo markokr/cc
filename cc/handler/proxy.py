@@ -51,4 +51,5 @@ class ProxyHandler(CCHandler):
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
+        self.log.debug('ProxyHandler.handle_msg')
         self.stream.send_cmsg(cmsg)
