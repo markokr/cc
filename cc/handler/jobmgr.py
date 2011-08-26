@@ -46,6 +46,14 @@ class JobState:
         for o in self.jcf.options():
             self.cfdict[o] = self.jcf.get(o)
 
+    def _watchdog_wait (self):
+        # y = a + bx , apply cap
+        y = self.watchdog_formula_a + self.watchdog_formula_b * (self.start_count-1)
+        if (self.watchdog_formula_cap is not None
+                and y > self.watchdog_formula_cap):
+            y = self.watchdog_formula_cap
+        return y
+
     def handle_timer(self):
         if self.proc:
             self.log.info ('JobState.handle_timer: checking on %s (%i)', self.jname, self.proc.pid)
@@ -68,7 +76,7 @@ class JobState:
                 self.log.warning ('JobState.handle_timer: %s is dead', self.jname)
                 if self.dead_since is None:
                     self.dead_since = time.time()
-                if time.time() >= self.dead_since + (self.start_count-1) * TIMER_TICK:
+                if time.time() >= self.dead_since + self._watchdog_wait():
                     self.timer.stop()
                     self.timer = None
                     self.start()
@@ -98,6 +106,10 @@ class JobState:
         self.start_time = time.time()
         self.dead_since = None
         self.watchdog_reset = self.jcf.getint ('watchdog-reset', 60*60)
+        self.watchdog_formula_a = self.jcf.getint ('watchdog-formula-a', 0)
+        self.watchdog_formula_b = self.jcf.getint ('watchdog-formula-b', 5)
+        self.watchdog_formula_cap = self.jcf.getint ('watchdog-formula-cap', 0)
+        if self.watchdog_formula_cap <= 0: self.watchdog_formula_cap = None
 
         self.timer = PeriodicCallback (self.handle_timer, TIMER_TICK * 1000, self.ioloop)
         self.timer.start()
