@@ -83,12 +83,11 @@ class TaskRouter(CCHandler):
         hr = self.route_map[host]
 
         # re-construct message
-        msg = cmsg.get_non_route()
-        zmsg = hr.route + [''] + msg
+        cmsg.set_route (hr.route)
 
         # send the message
         self.log.info('TaskRouter.send_host: sending task to %s', host)
-        self.cclocal.send_multipart(zmsg)
+        cmsg.send_to (self.cclocal)
 
         # FIXME: proper reply?
         zans = cmsg.get_route() + [''] + ['OK']

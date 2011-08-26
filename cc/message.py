@@ -58,11 +58,15 @@ class CCMessage(object):
     def __repr__(self):
         return self.__str__()
 
+    def set_route (self, route):
+        """Fill local route with another route."""
+        self.zmsg[:self.rpos] = route
+        self.rpos = len(route)
+
     def take_route(self, cmsg):
         """Fill local route with route from another message."""
         r = cmsg.get_route()
-        self.zmsg[:self.rpos] = r
-        self.rpos = len(r)
+        self.set_route(r)
 
     def get_payload(self, xtx):
         if self.parsed:
@@ -77,6 +81,9 @@ class CCMessage(object):
     def get_signature(self, xtx):
         self.get_payload(xtx)
         return self.signature
+
+    def send_to (self, sock):
+        sock.send_multipart (self.zmsg)
 
 
 def zmsg_size (zmsg):

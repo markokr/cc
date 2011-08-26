@@ -68,7 +68,7 @@ class CCJob(skytools.DBScript):
             line = rec.lineno,
             function = rec.funcName)
         cmsg = self.logxtx.create_cmsg(msg)
-        self.cc.send_multipart(cmsg.zmsg)
+        cmsg.send_to (self.cc)
 
     def ccquery(self, msg):
         """Sends query to CC, waits for answer."""
@@ -76,7 +76,7 @@ class CCJob(skytools.DBScript):
         if not self.cc: self.connect_cc()
 
         cmsg = self.xtx.create_cmsg(msg)
-        self.cc.send_multipart(cmsg.zmsg)
+        cmsg.send_to (self.cc)
 
         crep = CCMessage(self.cc.recv_multipart())
         return crep.get_payload(self.xtx)
@@ -86,7 +86,7 @@ class CCJob(skytools.DBScript):
         if not self.cc:
             self.connect_cc()
         cmsg = self.xtx.create_cmsg(msg)
-        self.cc.send_multipart(cmsg.zmsg)
+        cmsg.send_to (self.cc)
 
     def fetch_config(self):
         """ Query config """

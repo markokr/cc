@@ -100,7 +100,7 @@ class DBWorker(threading.Thread):
         jmsg = parse_json(js2)
         cmsg2 = CCMessage(jmsg = jmsg)
         cmsg2.take_route(cmsg)
-        self.wconn.send_multipart(cmsg2.zmsg)
+        cmsg2.send_to (self.wconn)
 
 
 #
@@ -131,4 +131,3 @@ class DBHandler(ProxyHandler):
             w = DBWorker(self.hname + '.' + wname, self.zctx, self.worker_url,
                          connstr, log, func_list, self.xtx)
             w.start()
-
