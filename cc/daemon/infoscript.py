@@ -3,7 +3,11 @@
 """Run script periodically, send output.
 """
 
-import sys, os, os.path, logging, time
+import logging
+import sys
+import time
+
+import cc.util
 
 from zmq.eventloop.ioloop import PeriodicCallback, IOLoop
 from subprocess import Popen, PIPE, STDOUT
@@ -38,6 +42,9 @@ class InfoScript(CCDaemon):
         self.info_script = self.cf.get('info-script')
         self.info_period = self.cf.getfloat('info-period')
         self.info_name = self.cf.get('info-name')
+        self.compression = self.cf.get ('compression', 'none')
+        if self.compression not in (None, '', 'none', 'gzip'):
+            self.log.error ("unknown compression: %s", self.compression)
 
         self.timer = StrictPeriod(self.run_info_script, self.info_period*1000, self.ioloop)
         self.timer.start()
@@ -55,11 +62,14 @@ class InfoScript(CCDaemon):
                            self.info_script, p.returncode, repr(res))
             return
 
-        msg = InfofileMessage(req = 'pub.infofile',
-                              filename = self.info_name,
-                              hostname = self.hostname,
-                              mtime = time.time(),
-                              data = res)
+        body = cc.util.compress (res, self.compression)
+
+        msg = InfofileMessage(
+                req = 'pub.infofile',
+                filename = self.info_name,
+                mtime = time.time(),
+                comp = self.compression,
+                data = body)
         self.ccpublish(msg)
 
     def work(self):

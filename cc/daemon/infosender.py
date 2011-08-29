@@ -3,11 +3,11 @@
 """Read infofiles.
 """
 
-import sys
 import glob
-import stat
 import os, os.path
-import socket
+import sys
+
+import cc.util
 
 from cc import json
 from cc.daemon import CCDaemon
@@ -40,6 +40,9 @@ class InfofileCollector(CCDaemon):
 
         self.infodir = self.cf.getfile('infodir')
         self.infomask = self.cf.get('infomask')
+        self.compression = self.cf.get ('compression', 'none')
+        if self.compression not in (None, '', 'none', 'gzip'):
+            self.log.error ("unknown compression: %s", self.compression)
 
     def startup(self):
         super(InfofileCollector, self).startup()
@@ -61,11 +64,13 @@ class InfofileCollector(CCDaemon):
         f.close()
 
     def send_file(self, fs, body):
+        cfb = cc.util.compress (body, self.compression)
         msg = InfofileMessage(
                 req = 'pub.infofile',
                 filename = os.path.basename(fs.filename),
                 mtime = fs.filestat.st_mtime,
-                data = body)
+                comp = self.compression,
+                data = cfb)
         self.ccpublish(msg)
 
     def find_new(self):

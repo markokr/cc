@@ -1,7 +1,11 @@
-import os, os.path, errno
+import base64
+import gzip
+import os, os.path
+import StringIO
+
+import cc.util
 
 from cc.handler import CCHandler
-from cc.util import write_atomic
 
 __all__ = ['InfoWriter']
 
@@ -27,8 +31,7 @@ class InfoWriter(CCHandler):
         """Got message from client, send to remote CC"""
 
         data = cmsg.get_payload(self.xtx)
-        if not data:
-            return
+        if not data: return
 
         mtime = data['mtime']
         host = data['hostname']
@@ -57,7 +60,9 @@ class InfoWriter(CCHandler):
         except OSError:
             pass
 
+        body = cc.util.decompress (data['data'], data['comp'])
+
         # write file, apply original mtime
         self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)
-        write_atomic(dstfn, data['data'], self.bakext)
+        cc.util.write_atomic (dstfn, body, bakext = self.bakext)
         os.utime(dstfn, (mtime, mtime))
