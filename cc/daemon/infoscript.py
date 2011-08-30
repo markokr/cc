@@ -45,7 +45,7 @@ class InfoScript(CCDaemon):
         self.compression = self.cf.get ('compression', 'none')
         if self.compression not in (None, '', 'none', 'gzip'):
             self.log.error ("unknown compression: %s", self.compression)
-        self.compression_level = self.cf.getint ('compression-level', 9)
+        self.compression_level = self.cf.getint ('compression-level', 6)
 
         self.timer = StrictPeriod(self.run_info_script, self.info_period*1000, self.ioloop)
         self.timer.start()
@@ -64,6 +64,7 @@ class InfoScript(CCDaemon):
             return
 
         body = cc.util.compress (res, self.compression, {'level': self.compression_level})
+        self.log.debug ("output compressed from %i to %i", len(res), len(body))
 
         msg = InfofileMessage(
                 req = 'pub.infofile',

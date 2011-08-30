@@ -43,7 +43,7 @@ class InfofileCollector(CCDaemon):
         self.compression = self.cf.get ('compression', 'none')
         if self.compression not in (None, '', 'none', 'gzip'):
             self.log.error ("unknown compression: %s", self.compression)
-        self.compression_level = self.cf.getint ('compression-level', 9)
+        self.compression_level = self.cf.getint ('compression-level', 6)
 
     def startup(self):
         super(InfofileCollector, self).startup()
@@ -66,6 +66,7 @@ class InfofileCollector(CCDaemon):
 
     def send_file(self, fs, body):
         cfb = cc.util.compress (body, self.compression, {'level': self.compression_level})
+        self.log.debug ("file compressed from %i to %i", len(body), len(cfb))
         msg = InfofileMessage(
                 req = 'pub.infofile',
                 filename = os.path.basename(fs.filename),

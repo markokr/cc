@@ -61,6 +61,7 @@ class InfoWriter(CCHandler):
             pass
 
         body = cc.util.decompress (data['data'], data['comp'])
+        self.log.debug ("InfoWriter.handle_msg: decompressed from %i to %i", len(data['data']), len(body))
 
         # write file, apply original mtime
         self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)
