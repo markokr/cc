@@ -73,8 +73,9 @@ def compress (buffer, method, options = {}):
     if method in [None, '', 'none']:
         data = buffer
     elif method == 'gzip':
+        cl = options.get ('level', 6)
         cs = StringIO.StringIO()
-        gz = gzip.GzipFile (fileobj = cs, mode = 'wb')
+        gz = gzip.GzipFile (fileobj = cs, mode = 'wb', compresslevel = cl)
         gz.write (buffer)
         gz.close()
         data = base64.b64encode (cs.getvalue())
