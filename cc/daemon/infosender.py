@@ -41,9 +41,9 @@ class InfofileCollector(CCDaemon):
         self.infodir = self.cf.getfile('infodir')
         self.infomask = self.cf.get('infomask')
         self.compression = self.cf.get ('compression', 'none')
-        if self.compression not in (None, '', 'none', 'gzip'):
+        if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
-        self.compression_level = self.cf.getint ('compression-level', 6)
+        self.compression_level = self.cf.getint ('compression-level', '')
 
     def startup(self):
         super(InfofileCollector, self).startup()

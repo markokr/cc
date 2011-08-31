@@ -1,7 +1,4 @@
-import base64
-import gzip
 import os, os.path
-import StringIO
 
 import cc.util
 
