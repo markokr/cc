@@ -2,7 +2,9 @@
 import time
 
 from zmq.eventloop.ioloop import PeriodicCallback
+
 from cc.handler import CCHandler
+from cc.reqs import TaskReplyMessage
 
 import skytools
 
@@ -25,6 +27,18 @@ class HostRoute(object):
         self.route = route
         self.create_time = time.time()
 
+class ReplyRoute(object):
+    """ZMQ route for reply to task."""
+
+    __slots__ = ('uid', 'route', 'atime')
+
+    def __init__(self, uid, route):
+        assert isinstance(route, list)
+        self.uid = uid
+        self.route = route
+        self.atime = time.time()
+
+
 class TaskRouter(CCHandler):
     """Keep track of host routes.
 
@@ -36,29 +50,35 @@ class TaskRouter(CCHandler):
     def __init__(self, *args):
         super(TaskRouter, self).__init__(*args)
         self.route_map = {}
+        self.reply_map = {}
 
-        # 1 hr?
+        # 1 hr? XXX
         self.route_lifetime = self.cf.getint ('route-lifetime', 1 * 60 * 60)
+        self.reply_timeout = self.cf.getint ('reply-timeout', 5 * 60)
         self.maint_period = self.cf.getint ('maint-period', 1 * 60)
 
         self.timer = PeriodicCallback(self.do_maint, self.maint_period*1000, self.ioloop)
         self.timer.start()
 
+
     def handle_msg(self, cmsg):
+        """ Got task from client or reply from TaskRunner / CCTask.
+        Dispatch task request to registered TaskRunner.
+        Dispatch task reply to requestor (client).
+        """
 
-        msg = cmsg.get_payload(self.xtx)
         req = cmsg.get_dest()
-        route = cmsg.get_route()
-
-        cmd = msg.req
-        host = msg.host
+        sreq = req.split('.')
 
         if req == 'task.register':
-            self.register_host(host, route)
-        elif req == 'task.send':
-            self.send_host(host, cmsg)
+            self.register_host (cmsg)
+        elif sreq[:2] == ['task','send']:
+            self.send_host (cmsg)
+        elif sreq[:2] == ['task','reply']:
+            self.send_reply (cmsg)
         else:
             self.log.warning('TaskRouter.handle_msg: unknown msg: %s', req)
+
 
     def do_maint(self):
         """Drop old routes"""
@@ -72,33 +92,78 @@ class TaskRouter(CCHandler):
             self.log.info('TaskRouter.do_maint: deleting route for %s', hr.host)
             del self.route_map[hr.host]
 
-    def send_host(self, host, cmsg):
-        """Send message for task executor on host"""
+        zombies = []
+        for rr in self.reply_map.itervalues():
+            if now - rr.atime > self.reply_timeout:
+                zombies.append(rr)
+        for rr in zombies:
+            self.log.info('TaskRouter.do_maint: deleting reply route for %s', rr.uid)
+            del self.reply_map[rr.uid]
 
-        if host not in self.route_map:
-            self.log.info('TaskRouter.send_host: cannot route to %s', host)
-            return
 
-        # find ZMQ route
-        hr = self.route_map[host]
-
-        # re-construct message
-        cmsg.set_route (hr.route)
-
-        # send the message
-        self.log.info('TaskRouter.send_host: sending task to %s', host)
-        cmsg.send_to (self.cclocal)
-
-        # FIXME: proper reply?
-        zans = cmsg.get_route() + [''] + ['OK']
-        self.cclocal.send_multipart(zans)
-
-    def register_host(self, host, route):
+    def register_host (self, cmsg):
         """Remember ZMQ route for host"""
-        self.log.info('TaskRouter.register_host: (%s, %s)', repr(host), repr(route))
-        hr = HostRoute(host, route)
+
+        route = cmsg.get_route()
+        msg = cmsg.get_payload (self.xtx)
+        host = msg.host
+        self.log.info ('TaskRouter.register_host: (%s, %s)', host, route)
+        hr = HostRoute (host, route)
         self.route_map[hr.host] = hr
 
         # FIXME: proper reply?
         #zans = route + [''] + ['OK']
         #self.cclocal.send_multipart(zans)
+
+
+    def send_host (self, cmsg):
+        """Send message for task executor on host"""
+
+        msg = cmsg.get_payload (self.xtx)
+        host = msg.host
+
+        if host not in self.route_map:
+            self.log.info('TaskRouter.send_host: cannot route to %s', host)
+            return
+
+        inr = cmsg.get_route()          # route from/to client
+        hr = self.route_map[host]       # find ZMQ route to host
+        cmsg.set_route (hr.route)       # re-construct message
+
+        # send the message
+        self.log.info('TaskRouter.send_host: sending task to %s', host)
+        cmsg.send_to (self.cclocal)
+
+        # remember ZMQ route for replies
+        req = cmsg.get_dest()
+        uid = req.split('.')[2]
+        rr = ReplyRoute (uid, inr)
+        self.reply_map[uid] = rr
+
+        # send ack to client
+        rep = TaskReplyMessage(
+                req = 'task.reply.%s' % uid,
+                handler = msg['handler'],
+                task_id = msg['task_id'],
+                status = 'forwarded')
+        rcm = self.xtx.create_cmsg (rep)
+        rcm.set_route (inr)
+        rcm.send_to (self.cclocal)
+
+
+    def send_reply (self, cmsg):
+        """ Send reply message back to task requestor """
+
+        req = cmsg.get_dest()
+        uid = req.split('.')[2]
+
+        if uid not in self.reply_map:
+            self.log.info ("TaskRouter.send_reply: cannot route back: %s", req)
+            return
+
+        self.log.debug ("TaskRouter.send_reply: %s", req)
+
+        rr = self.reply_map[uid]        # find ZMQ route
+        cmsg.set_route (rr.route)       # re-route message
+        cmsg.send_to (self.cclocal)
+        rr.atime = time.time()          # update feedback time

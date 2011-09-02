@@ -123,7 +123,7 @@ class CCJob(skytools.DBScript):
         if not self.zctx:
             self.zctx = zmq.Context()
         if not self.cc:
-            url = self.options.cc or 'tcp://127.0.0.1:10000' # XXX: debug code
+            url = self.options.cc
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.connect(url)
             self.cc.setsockopt(zmq.LINGER, 500)

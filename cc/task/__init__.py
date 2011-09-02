@@ -26,10 +26,9 @@ class CCTask(CCJob):
 
     def work(self):
         self.connect_cc()
-        self.log.info('task work')
         task = self.task_info['task']
+        self.log.info ('CCTask.work: %r', task)
         self.process_task(task)
 
-    def process_task(self, tsk):
-        pass
-
+    def process_task(self, task):
+        raise NotImplementedError

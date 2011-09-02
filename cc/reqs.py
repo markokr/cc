@@ -48,6 +48,14 @@ class TaskRegisterMessage(BaseMessage):
 class TaskSendMessage(BaseMessage):
     "req.task.send"
     host = Field(str)
+    handler = Field(str)
+    task_id = Field(int)
+
+class TaskReplyMessage (BaseMessage):
+    "req.task.reply"
+    handler = Field(str)
+    task_id = Field(int)
+    status = Field(str)
 
 
 def parse_json(js):

@@ -6,6 +6,7 @@
 import sys
 import zmq
 import time
+import uuid
 import json
 
 zctx = zmq.Context()
@@ -13,7 +14,7 @@ sock = zctx.socket(zmq.XREQ)
 sock.connect('tcp://127.0.0.1:10000')
 
 if len(sys.argv) < 2:
-    print 'usage: testmsg log|task|info'
+    print 'usage: testmsg log|task|info|db|job'
     sys.exit(0)
 
 typ = sys.argv[1]
@@ -21,7 +22,7 @@ if typ == 'info':
     msg = {'req': 'pub.infofile', 'msg': 'Blah'}
     msg = {'req': 'pub.infofile', 'mtime': 1314187603, 'hostname': 'me', 'filename': 'info.1', 'data': 'qwerty'}
 elif typ == 'task':
-    msg = {'req': 'task.send', 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55}
+    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55}
 elif typ == 'log':
     msg = {'req': 'pub.log', 'host': 'hostname', 'msg': 'Foo'}
 elif typ == 'db':
@@ -42,3 +43,11 @@ sock.send_multipart(zmsg)
 
 res = sock.recv_multipart()
 print 'response:', repr(res)
+
+if (typ == 'task'):
+    while True:
+        res = sock.recv_multipart()
+        print 'response:', repr(res)
+        data = json.loads (res[2])
+        if (data['status'] == 'finished'):
+            break

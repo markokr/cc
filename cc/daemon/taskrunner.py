@@ -13,7 +13,7 @@ import sys
 from cc import json
 from cc.daemon import CCDaemon
 from cc.message import CCMessage
-from cc.reqs import TaskRegisterMessage
+from cc.reqs import TaskRegisterMessage, TaskReplyMessage
 from cc.stream import CCStream
 
 import zmq, zmq.eventloop
@@ -70,9 +70,19 @@ class TaskRunner(CCDaemon):
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
-        out = p.communicate(js)[0]
+
         self.log.info('Launched task: %s', ' '.join(cmd))
+        out = p.communicate(js)[0]
         self.log.info('Task returned: rc=%d, out=%r', p.returncode, out)
+
+        req = cmsg.get_dest()
+        uid = req.split('.')[2]
+        rep = TaskReplyMessage(
+                req = 'task.reply.%s' % uid,
+                handler = msg['handler'],
+                task_id = msg['task_id'],
+                status = 'launched')
+        self.ccpublish (rep)
 
     def work(self):
         """Default work loop simply runs ioloop."""
