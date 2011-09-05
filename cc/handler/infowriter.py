@@ -12,6 +12,11 @@ CC_HANDLER = 'InfoWriter'
 # infofile writer
 #
 
+comp_ext = {
+    'gzip': '.gz',
+    'bzip2': '.bz2',
+    }
+
 class InfoWriter(CCHandler):
     """Simply writes to files."""
 
@@ -23,6 +28,8 @@ class InfoWriter(CCHandler):
         self.dstdir = hcf.getfile('dstdir')
         self.host_subdirs = hcf.getboolean('host-subdirs', 0)
         self.bakext = hcf.get('bakext', '')
+        self.write_compressed = hcf.get ('write-compressed', '')
+        assert self.write_compressed in [None, '', 'no', 'keep', 'yes']
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
@@ -35,6 +42,13 @@ class InfoWriter(CCHandler):
         fn = os.path.basename(data['filename'])
         # sanitize
         host = host.replace('/', '_')
+
+        # add file ext if needed
+        if self.write_compressed == 'keep':
+            if data['comp'] not in [None, '', 'none']:
+                fn += comp_ext[data['comp']]
+        elif self.write_compressed == 'yes':
+            raise NotImplementedError
 
         # decide destination file
         if self.host_subdirs:
@@ -57,8 +71,11 @@ class InfoWriter(CCHandler):
         except OSError:
             pass
 
-        body = cc.util.decompress (data['data'], data['comp'])
-        self.log.debug ("InfoWriter.handle_msg: decompressed from %i to %i", len(data['data']), len(body))
+        if self.write_compressed in [None, '', 'no', 'keep']:
+            body = cc.util.decompress (data['data'], data['comp'], {'keep': (self.write_compressed == 'keep')})
+            self.log.debug ("InfoWriter.handle_msg: decompressed from %i to %i", len(data['data']), len(body))
+        elif self.write_compressed == 'yes':
+            raise NotImplementedError
 
         # write file, apply original mtime
         self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)

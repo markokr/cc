@@ -9,6 +9,7 @@ set -e
 #export PYTHONPATH
 
 mkdir -p ~/log ~/pid
+mkdir -p /tmp/infodir
 mkdir -p /tmp/infofiles
 
 for ini in conf/*.ini; do
@@ -18,12 +19,11 @@ done
 
 #echo 'sending db'
 #./bin/testmsg.py db
-mkdir -p /tmp/infofiles
 
 while [ True ]; do
     sleep 1
     echo "checking if infofile arrived"
-    ls /tmp/infofiles/ || true
+    ls /tmp/infofiles/* || true
     grep -E 'ERR|WARN|CRIT|Exc' ~/log/*.log || true
 done
 

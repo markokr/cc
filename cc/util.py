@@ -93,6 +93,8 @@ def decompress (buffer, method, options = {}):
 
     if method in [None, '', 'none']:
         data = buffer
+    elif options.get ('keep', False):
+        data = buffer.decode('base64')
     elif method == 'gzip':
         cs = StringIO.StringIO (buffer.decode('base64'))
         gz = gzip.GzipFile (fileobj = cs, mode = 'rb')
