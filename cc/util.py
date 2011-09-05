@@ -1,6 +1,5 @@
 """Low-level utilities"""
 
-import base64
 import bz2
 import errno
 import fcntl
@@ -79,11 +78,11 @@ def compress (buffer, method, options = {}):
         gz = gzip.GzipFile (fileobj = cs, mode = 'wb', compresslevel = cl)
         gz.write (buffer)
         gz.close()
-        data = base64.b64encode (cs.getvalue())
+        data = cs.getvalue().encode('base64')
         cs.close()
     elif method == 'bzip2':
         cl = options.get ('level', 3) or 3
-        data = base64.b64encode (bz2.compress (buffer, compresslevel = cl))
+        data = bz2.compress (buffer, compresslevel = cl).encode('base64')
     else:
         raise NotImplementedError ("unknown compression: %s" % method)
     return data
@@ -95,13 +94,13 @@ def decompress (buffer, method, options = {}):
     if method in [None, '', 'none']:
         data = buffer
     elif method == 'gzip':
-        cs = StringIO.StringIO (base64.b64decode (buffer))
+        cs = StringIO.StringIO (buffer.decode('base64'))
         gz = gzip.GzipFile (fileobj = cs, mode = 'rb')
         data = gz.read()
         gz.close()
         cs.close()
     elif method == 'bzip2':
-        data = bz2.decompress (base64.b64decode (buffer))
+        data = bz2.decompress (buffer.decode('base64'))
     else:
         raise NotImplementedError ("unknown compression: %s" % method)
     return data
