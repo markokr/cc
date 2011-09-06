@@ -72,7 +72,7 @@ class InfofileCollector(CCDaemon):
                 filename = os.path.basename(fs.filename),
                 mtime = fs.filestat.st_mtime,
                 comp = self.compression,
-                data = cfb)
+                data = cfb.encode('base64'))
         self.ccpublish(msg)
 
     def find_new(self):

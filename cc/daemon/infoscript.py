@@ -71,7 +71,7 @@ class InfoScript(CCDaemon):
                 filename = self.info_name,
                 mtime = time.time(),
                 comp = self.compression,
-                data = body)
+                data = body.encode('base64'))
         self.ccpublish(msg)
 
     def work(self):

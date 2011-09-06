@@ -78,11 +78,11 @@ def compress (buffer, method, options = {}):
         gz = gzip.GzipFile (fileobj = cs, mode = 'wb', compresslevel = cl)
         gz.write (buffer)
         gz.close()
-        data = cs.getvalue().encode('base64')
+        data = cs.getvalue()
         cs.close()
     elif method == 'bzip2':
         cl = options.get ('level', 3) or 3
-        data = bz2.compress (buffer, compresslevel = cl).encode('base64')
+        data = bz2.compress (buffer, compresslevel = cl)
     else:
         raise NotImplementedError ("unknown compression: %s" % method)
     return data
@@ -93,16 +93,14 @@ def decompress (buffer, method, options = {}):
 
     if method in [None, '', 'none']:
         data = buffer
-    elif options.get ('keep', False):
-        data = buffer.decode('base64')
     elif method == 'gzip':
-        cs = StringIO.StringIO (buffer.decode('base64'))
+        cs = StringIO.StringIO (buffer)
         gz = gzip.GzipFile (fileobj = cs, mode = 'rb')
         data = gz.read()
         gz.close()
         cs.close()
     elif method == 'bzip2':
-        data = bz2.decompress (buffer.decode('base64'))
+        data = bz2.decompress (buffer)
     else:
         raise NotImplementedError ("unknown compression: %s" % method)
     return data
