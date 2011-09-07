@@ -22,6 +22,7 @@ if typ == 'info':
     msg = {'req': 'pub.infofile', 'msg': 'Blah'}
     msg = {'req': 'pub.infofile', 'mtime': 1314187603, 'hostname': 'me', 'filename': 'info.1', 'data': 'qwerty'}
 elif typ == 'task':
+    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'host': 'hostname', 'handler': 'cc.task.sample_async', 'task_id': 55}
     msg = {'req': 'task.send.%s' % uuid.uuid1(), 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55}
 elif typ == 'log':
     msg = {'req': 'pub.log', 'host': 'hostname', 'msg': 'Foo'}

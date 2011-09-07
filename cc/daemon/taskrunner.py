@@ -75,13 +75,15 @@ class TaskRunner(CCDaemon):
         out = p.communicate(js)[0]
         self.log.info('Task returned: rc=%d, out=%r', p.returncode, out)
 
+        fb = {'rc': p.returncode, 'out': out.encode('base64')}
         req = cmsg.get_dest()
         uid = req.split('.')[2]
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % uid,
                 handler = msg['handler'],
                 task_id = msg['task_id'],
-                status = 'launched')
+                status = 'launched',
+                feedback = fb)
         self.ccpublish (rep)
 
     def work(self):

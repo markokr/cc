@@ -56,6 +56,7 @@ class TaskReplyMessage (BaseMessage):
     handler = Field(str)
     task_id = Field(int)
     status = Field(str)
+    #feedback = Field(dict)
 
 
 def parse_json(js):

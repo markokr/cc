@@ -1,7 +1,11 @@
 
-import sys, skytools
+import sys
+
+import skytools
+
 from cc import json
 from cc.job import CCJob
+from cc.reqs import TaskReplyMessage
 
 #
 # Base class for tasks
@@ -28,7 +32,28 @@ class CCTask(CCJob):
         self.connect_cc()
         task = self.task_info['task']
         self.log.info ('CCTask.work: %r', task)
+        self.task_uid = task['req'].split('.')[2]
         self.process_task(task)
 
     def process_task(self, task):
         raise NotImplementedError
+
+    def send_feedback (self, fb):
+        assert isinstance (fb, dict)
+        task = self.task_info['task']
+        rep = TaskReplyMessage(
+                req = 'task.reply.%s' % self.task_uid,
+                handler = task['handler'],
+                task_id = task['task_id'],
+                status = 'feedback',
+                feedback = fb)
+        self.ccpublish (rep)
+
+    def send_finished (self):
+        task = self.task_info['task']
+        rep = TaskReplyMessage(
+                req = 'task.reply.%s' % self.task_uid,
+                handler = task['handler'],
+                task_id = task['task_id'],
+                status = 'finished')
+        self.ccpublish (rep)
