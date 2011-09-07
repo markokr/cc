@@ -19,6 +19,9 @@ class CCTask(CCJob):
     - log is sent into CC
     """
     looping = 0
+    task_uid = None
+    task_finished = False
+
     def __init__(self, service_name, args):
         info = sys.stdin.read()
         self.task_info = json.Struct.from_json(info)
@@ -27,6 +30,12 @@ class CCTask(CCJob):
 
     def fetch_config(self):
         return self.task_info['config']
+
+    def run(self):
+        try:
+            CCJob.run(self)
+        finally:
+            self.send_finished(False)
 
     def work(self):
         self.connect_cc()
@@ -38,8 +47,9 @@ class CCTask(CCJob):
     def process_task(self, task):
         raise NotImplementedError
 
-    def send_feedback (self, fb):
+    def send_feedback (self, fb={}, **kwargs):
         assert isinstance (fb, dict)
+        fb = fb or kwargs
         task = self.task_info['task']
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % self.task_uid,
@@ -49,11 +59,34 @@ class CCTask(CCJob):
                 feedback = fb)
         self.ccpublish (rep)
 
-    def send_finished (self):
+    def send_finished (self, ok=True):
+        if self.task_finished:
+            return
+        self.task_finished = True
+        stat = ok and 'finished' or 'failed'
         task = self.task_info['task']
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % self.task_uid,
                 handler = task['handler'],
                 task_id = task['task_id'],
-                status = 'finished')
+                status = stat)
         self.ccpublish (rep)
+
+    def emit_log(self, rec):
+        CCJob.emit_log(self, rec)
+        if not self.cc:
+            return
+        if not self.task_uid:
+            return
+
+        # send reply to task client too
+        self.send_feedback(
+            level = rec.levelname,
+            service_type = self.service_name,
+            job_name = self.job_name,
+            msg = rec.getMessage(),
+            time = rec.created,
+            pid = rec.process,
+            line = rec.lineno,
+            function = rec.funcName)
+
