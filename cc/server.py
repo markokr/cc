@@ -5,26 +5,6 @@
 client <-> ccserver|handler <-> handlerproc
 
 
-Config::
-    [ccserver]
-    logfile = ~/log/%(job_name)s.log
-    pidfile = ~/pid/%(job_name)s.pid
-
-    [routes]
-    req.confdb = confdb
-    req.infodb = infodb
-    pub.info = infofile
-
-    [confdb]
-    plugin = cc.Proxy
-    remote-xreq-cc = tcp://127.0.0.1
-
-    [infodb]
-    plugin = cc.DBQuery
-    db = host=127.0.0.1 dbname=infodb
-
-    [infofile]
-    remote-xreq-cc = tcp://127.0.0.1
 """
 
 
@@ -42,7 +22,30 @@ from cc.crypto import CryptoContext
 
 
 class CCServer(skytools.BaseScript):
-    """Listens on single ZMQ sockets, dispatches messages to handlers."""
+    """Listens on single ZMQ sockets, dispatches messages to handlers.
+
+    Config::
+        ## Parameters for CCServer ##
+
+        # listening socket for this CC instance
+        cc-socket = tcp://127.0.0.1:10000
+    """
+    extra_ini = """
+    Extra segments::
+
+        # map req prefix to handler segment
+        [routes]
+        log = h:locallog
+
+        # segment for specific handler
+        [h:locallog]
+        handler = cc.handler.locallogger
+    """
+
+    def print_ini(self):
+        super(CCServer, self).print_ini()
+
+        self._print_ini_frag(self.extra_ini)
 
     def startup(self):
         """Setup sockets and handlers."""
