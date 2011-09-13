@@ -19,10 +19,10 @@ if len(sys.argv) < 2:
 
 typ = sys.argv[1]
 if typ == 'info':
-    msg = {'req': 'pub.infofile', 'msg': 'Blah'}
-    msg = {'req': 'pub.infofile', 'mtime': 1314187603, 'hostname': 'me', 'filename': 'info.1', 'data': 'qwerty'}
-elif typ == 'task':
+    msg = {'req': 'pub.infofile', 'mtime': 1314187603, 'hostname': 'me', 'filename': 'info.1', 'data': 'qwerty'.encode('base64'), 'comp': ''}
+elif typ == 'taska':
     msg = {'req': 'task.send.%s' % uuid.uuid1(), 'host': 'hostname', 'handler': 'cc.task.sample_async', 'task_id': 55}
+elif typ == 'task':
     msg = {'req': 'task.send.%s' % uuid.uuid1(), 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'run'}
 elif typ == 'task1':
     msg = {'req': 'task.send.%s' % uuid.uuid1(), 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'crash-launch'}
@@ -45,6 +45,8 @@ zmsg = ['', msg['req'], mjs, '']
 
 print 'request:', repr(zmsg)
 sock.send_multipart(zmsg)
+if typ == 'task':
+    sock.send_multipart(zmsg) # should ignore
 
 res = sock.recv_multipart()
 print 'response:', repr(res)
@@ -60,4 +62,3 @@ if typ[:4] == 'task':
                 print fb['out'].decode('base64')
         if data['status'] in ('finished', 'failed'):
             break
-

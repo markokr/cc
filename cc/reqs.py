@@ -55,7 +55,7 @@ class TaskReplyMessage (BaseMessage):
     "req.task.reply"
     handler = Field(str)
     task_id = Field(int)
-    status = Field(str) # launched, feedback, finished, failed
+    status = Field(str) # launched, feedback, finished, failed, running, stopped
     #feedback = Field(dict)
 
 
