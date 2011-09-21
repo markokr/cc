@@ -73,22 +73,23 @@ class CCServer(skytools.BaseScript):
         self.handlers = {}
         self.routes = {}
         rcf = skytools.Config('routes', self.cf.filename, ignore_defs = True)
-        for r, hname in rcf.cf.items('routes'):
-            if hname in self.handlers:
-                h = self.handlers[hname]
-            else:
-                self.log.info('CCServer.startup: New route def: %s = %s', r, hname)
-                hcf = self.cf.clone(hname)
+        for r, hnames in rcf.cf.items('routes'):
+            self.log.info ('CCServer.startup: Route def: %s = %s', r, hnames)
+            for hname in [hn.strip() for hn in hnames.split(',')]:
+                if hname in self.handlers:
+                    h = self.handlers[hname]
+                else:
+                    hcf = self.cf.clone(hname)
 
-                # renamed option: plugin->handler
-                htype = hcf.get('plugin', '?')
-                if htype == '?':
-                    htype = hcf.get('handler')
+                    # renamed option: plugin->handler
+                    htype = hcf.get('plugin', '?')
+                    if htype == '?':
+                        htype = hcf.get('handler')
 
-                cls = cc_handler_lookup(htype, self.cur_role)
-                h = cls(hname, hcf, self)
-                self.handlers[hname] = h
-            self.add_handler(r, h)
+                    cls = cc_handler_lookup(htype, self.cur_role)
+                    h = cls(hname, hcf, self)
+                    self.handlers[hname] = h
+                self.add_handler(r, h)
 
         self.stimer = PeriodicCallback(self.send_stats, 5*1000, self.ioloop)
         self.stimer.start()
