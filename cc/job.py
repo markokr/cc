@@ -59,14 +59,14 @@ class CCJob(skytools.DBScript):
             return
         msg = LogMessage(
             req = 'log.%s' % rec.levelname.lower(),
-            level = rec.levelname,
+            log_level = rec.levelname,
             service_type = self.service_name,
             job_name = self.job_name,
-            msg = rec.getMessage(),
-            time = rec.created,
-            pid = rec.process,
-            line = rec.lineno,
-            function = rec.funcName)
+            log_msg = rec.getMessage(),
+            log_time = rec.created,
+            log_pid = rec.process,
+            log_line = rec.lineno,
+            log_function = rec.funcName)
         cmsg = self.logxtx.create_cmsg(msg)
         cmsg.send_to (self.cc)
 

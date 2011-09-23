@@ -7,8 +7,11 @@ binary DER-encoded messages.
 Formatting messages for ZMQ packets is done in cc.message module.
 """
 
-from M2Crypto import SMIME, BIO, X509
 import os.path
+import time
+
+from M2Crypto import SMIME, BIO, X509
+
 from cc.json import Struct
 from cc.message import CCMessage
 
@@ -385,7 +388,11 @@ class CryptoContext:
 
         msg = Struct.from_json(js)
         if msg.req != req:
-            self.log.error('hijacked message')
+            self.log.error ('CryptoContext.parse_cmsg: hijacked message')
+            return (None, None)
+        age = time.time() - msg.time
+        if age > 300 or age < -60:
+            self.log.error ('CryptoContext.parse_cmsg: too big time diff: %f', age)
             return (None, None)
 
         return msg, sgn
@@ -564,4 +571,3 @@ def bench():
 if __name__ == '__main__':
     test()
     bench()
-

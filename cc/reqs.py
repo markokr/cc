@@ -8,6 +8,7 @@ __all__ = ['LogMessage', 'InfofileMessage', 'JobRequestMessage', 'JobConfigReply
 
 class BaseMessage(Struct):
     req = Field(str)
+    time = Field(float, default = time.time())
     hostname = Field(str, default = socket.gethostname())
 
 class ErrorMessage (BaseMessage):
@@ -15,14 +16,14 @@ class ErrorMessage (BaseMessage):
 
 class LogMessage(BaseMessage):
     "log.*"
-    level = Field(str)
+    log_level = Field(str)
     service_type = Field(str)
     job_name = Field(str)
-    msg = Field(str)
-    time = Field(float)
-    pid = Field(int)
-    line = Field(int)
-    function = Field(str)
+    log_msg = Field(str)
+    log_time = Field(float)
+    log_pid = Field(int)
+    log_line = Field(int)
+    log_function = Field(str)
 
 class InfofileMessage(BaseMessage):
     "pub.infofile"
