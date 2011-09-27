@@ -198,7 +198,13 @@ class _MetaStruct(type):
                 base.__init__(self, *p, **kw)
 
             for fieldname, field in _fields.iteritems():
-                self[fieldname] = field(self.get(fieldname))
+                # if fieldname is not given to init then use default
+                # when default is not set, use ancestor's default
+                if fieldname not in kw and field.default:
+                    val = field()
+                else:
+                    val = field(self.get(fieldname))
+                self[fieldname] = val
 
             for key, val in self.iteritems():
                 if not key in _fields:
