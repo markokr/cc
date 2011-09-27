@@ -177,7 +177,7 @@ class TaskRunner(CCDaemon):
 
     def periodic_reg(self):
         """Register taskrunner in central router."""
-        msg = TaskRegisterMessage (req = 'task.register', host = self.local_id)
+        msg = TaskRegisterMessage (host = self.local_id)
         self.log.info ('TaskRunner.periodic_reg: %s', repr(msg))
         self.ccpublish (msg)
 

@@ -11,7 +11,11 @@ class BaseMessage(Struct):
     time = Field(float, default = time.time())
     hostname = Field(str, default = socket.gethostname())
 
-class ErrorMessage (BaseMessage):
+class ReplyMessage (BaseMessage):
+    "reply.*"
+
+class ErrorMessage (ReplyMessage):
+    "error.*"
     msg = Field(str)
 
 class LogMessage(BaseMessage):
@@ -26,7 +30,7 @@ class LogMessage(BaseMessage):
     log_function = Field(str)
 
 class InfofileMessage(BaseMessage):
-    "pub.infofile"
+    req = Field(str, "pub.infofile")
     mtime = Field(float)                # last modification time of file
     filename = Field(str)
     data = Field(str)                   # file contents (data fork)
@@ -34,26 +38,26 @@ class InfofileMessage(BaseMessage):
     mode = Field(str)                   # file mode to use for fopen
 
 class JobConfigRequestMessage(BaseMessage):
-    "job.config"
+    req = Field(str, "job.config")
     job_name = Field(str)
 
 class JobConfigReplyMessage(BaseMessage):
-    "job.config"
+    req = Field(str, "job.config")
     job_name = Field(str)
     config = Field(dict)
 
 class TaskRegisterMessage(BaseMessage):
-    "req.task.register"
+    req = Field(str, "task.register")
     host = Field(str)
 
 class TaskSendMessage(BaseMessage):
-    "req.task.send"
+    "task.send.*"
     host = Field(str)
     handler = Field(str)
     task_id = Field(int)
 
 class TaskReplyMessage (BaseMessage):
-    "req.task.reply"
+    "task.reply.*"
     handler = Field(str)
     task_id = Field(int)
     status = Field(str) # launched, feedback, finished, failed, running, stopped

@@ -13,7 +13,7 @@ import skytools
 from cc import json
 from cc.message import CCMessage
 
-from cc.reqs import JobConfigRequestMessage, JobConfigReplyMessage, LogMessage, BaseMessage
+from cc.reqs import BaseMessage, JobConfigRequestMessage, LogMessage
 
 from cc.crypto import CryptoContext
 
@@ -90,9 +90,7 @@ class CCJob(skytools.DBScript):
 
     def fetch_config(self):
         """ Query config """
-        msg = JobConfigRequestMessage(
-                req = 'job.config',
-                job_name = self.job_name)
+        msg = JobConfigRequestMessage (job_name = self.job_name)
         rep = self.ccquery(msg)
         return rep.config
 

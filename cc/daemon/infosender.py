@@ -68,7 +68,6 @@ class InfofileCollector(CCDaemon):
         cfb = cc.util.compress (body, self.compression, {'level': self.compression_level})
         self.log.debug ("file compressed from %i to %i", len(body), len(cfb))
         msg = InfofileMessage(
-                req = 'pub.infofile',
                 filename = os.path.basename(fs.filename),
                 mtime = fs.filestat.st_mtime,
                 comp = self.compression,

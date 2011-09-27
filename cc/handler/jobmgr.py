@@ -156,23 +156,21 @@ class JobMgr(CCHandler):
         if data.req == 'job.config':
             if not hasattr (data, 'job_name'):
                 msg = ErrorMessage(
-                    req = data.req,
+                    req = "error.%s" % data.req,
                     msg = "Missing job_name")
             elif not data.job_name in self.jobs:
                 msg = ErrorMessage(
-                    req = data.req,
+                    req = "error.%s" % data.req,
                     job_name = data.job_name,
                     msg = "Unknown job_name")
             else:
                 job = self.jobs[data.job_name]
                 msg = JobConfigReplyMessage(
-                    req = data.req,
                     job_name = data.job_name,
                     config = job.cfdict)
         else:
             msg = ErrorMessage(
-                req = data.req,
-                #job_name = data.job_name,
+                req = "error.%s" % data.req,
                 msg = 'Unsupported req')
         crep = self.xtx.create_cmsg(msg)
         crep.take_route(cmsg)
@@ -182,4 +180,3 @@ class JobMgr(CCHandler):
     def stop(self):
         for j in self.jobs.values():
             j.stop()
-

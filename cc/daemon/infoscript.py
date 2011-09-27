@@ -67,7 +67,6 @@ class InfoScript(CCDaemon):
         self.log.debug ("output compressed from %i to %i", len(res), len(body))
 
         msg = InfofileMessage(
-                req = 'pub.infofile',
                 filename = self.info_name,
                 mtime = time.time(),
                 comp = self.compression,
