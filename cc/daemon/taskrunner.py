@@ -11,6 +11,7 @@
 import subprocess
 import sys
 import time
+import signal
 
 from cc import json
 from cc.daemon import CCDaemon

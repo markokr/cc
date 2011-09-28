@@ -10,6 +10,7 @@ import skytools
 from cc.task import CCTask
 
 class SampleTask (CCTask):
+    x_time = 0
     def process_task (self, task):
         self.started = time.time()
         self.timer_handler(1)   # launch asynchronous feedback thread
