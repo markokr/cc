@@ -8,7 +8,7 @@ __all__ = ['LogMessage', 'InfofileMessage', 'JobRequestMessage', 'JobConfigReply
 
 class BaseMessage(Struct):
     req = Field(str)
-    time = Field(float, default = time.time())
+    time = Field(float, default = time.time)
     hostname = Field(str, default = socket.gethostname())
 
 class ReplyMessage (BaseMessage):
