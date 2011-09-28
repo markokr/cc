@@ -1,3 +1,9 @@
+cc (0.6) unstable; urgency=low
+
+  * v0.6
+
+ -- Marko Kreen <marko.kreen@skype.net>  Wed, 28 Sep 2011 13:22:05 +0300
+
 cc (0.5.3) unstable; urgency=low
 
   * cc.crypto: cache keys, gives some speedup
