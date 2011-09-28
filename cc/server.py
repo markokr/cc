@@ -155,6 +155,10 @@ class CCServer(skytools.BaseScript):
         for h in self.handlers.values():
             h.stop()
 
-if __name__ == '__main__':
+def main():
     script = CCServer('ccserver', sys.argv[1:])
     script.start()
+
+if __name__ == '__main__':
+    main()
+
