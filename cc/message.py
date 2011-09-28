@@ -14,6 +14,7 @@ class CCMessage(object):
     - cc dest
     - cc payload (json)
     - cc signature
+    - cc blob data
     """
     __slots__ = ('zmsg', 'rpos', 'parsed', 'signature')
 
@@ -41,10 +42,16 @@ class CCMessage(object):
         return self.zmsg[self.rpos + 2]
 
     def get_part2(self):
-        """Retrun signature"""
+        """Return signature"""
         if self.rpos + 3 >= len(self.zmsg):
             return ''
         return self.zmsg[self.rpos + 3]
+
+    def get_part3(self):
+        """Return blob"""
+        if self.rpos + 4 >= len(self.zmsg):
+            return None
+        return self.zmsg[self.rpos + 4]
 
     def get_size(self):
         return zmsg_size (self.zmsg)

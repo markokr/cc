@@ -10,6 +10,7 @@ Formatting messages for ZMQ packets is done in cc.message module.
 import os.path
 import time
 
+from hashlib import sha1
 from M2Crypto import SMIME, BIO, X509
 
 from cc.json import Struct
@@ -342,7 +343,9 @@ class CryptoContext:
             if v and n1 not in cf_dict:
                 cf_dict[n1] = v
 
-    def create_cmsg(self, msg):
+    def create_cmsg(self, msg, blob=None):
+        if blob is not None:
+            msg.blob_hash = sha1(blob).hexdigest()
         js = msg.dump_json()
         part1 = js
         part2 = ''
@@ -357,12 +360,16 @@ class CryptoContext:
             part2 = self.cms.sign(js, self.sign_name)
         else:
             self.log.debug("CryptoContext.create_cmsg: no crypto: %s", msg['req'])
-        return CCMessage(['', msg.req.encode('utf8'), part1, part2])
+        zmsg = ['', msg.req.encode('utf8'), part1, part2]
+        if blob is not None:
+            zmsg.append(blob)
+        return CCMessage(zmsg)
 
     def parse_cmsg(self, cmsg):
         req = cmsg.get_dest()
         part1 = cmsg.get_part1()
         part2 = cmsg.get_part2()
+        blob = cmsg.get_part3()
 
         if self.decrypt_name:
             if part1 != 'ENC1':
@@ -395,6 +402,18 @@ class CryptoContext:
             self.log.error ('CryptoContext.parse_cmsg: too big time diff: %f', age)
             return (None, None)
 
+        if blob is not None:
+            h = sha1(blob).hexdigest()
+            if hasattr(msg, 'blob_hash'):
+                if h != msg.blob_hash:
+                    self.log.error ('CryptoContext.parse_cmsg: blob has does not match: %s <> %s', h, msg.blob_hash)
+                    return (None, None)
+            else:
+                self.log.error ('CryptoContext.parse_cmsg: blob hash missing')
+                return (None, None)
+        elif hasattr(msg, 'blob_hash'):
+            self.log.error ('CryptoContext.parse_cmsg: blob hash exists without blob')
+            return (None, None)
         return msg, sgn
 
 #
