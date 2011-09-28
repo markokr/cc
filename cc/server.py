@@ -97,7 +97,10 @@ class CCServer(skytools.BaseScript):
     def add_handler(self, rname, handler):
         """Add route to handler"""
 
-        r = tuple(rname.split('.'))
+        if rname == '*':
+            r = ()
+        else:
+            r = tuple(rname.split('.'))
         self.log.info('CCServer.add_handler: %s -> %s', repr(r), handler.hname)
         rhandlers = self.routes.setdefault(r, [])
         rhandlers.append(handler)
@@ -118,7 +121,7 @@ class CCServer(skytools.BaseScript):
 
             # find and run all handlers that match
             cnt = 0
-            for n in range(1, 1 + len(route)):
+            for n in range(0, 1 + len(route)):
                 p = route[ : n]
                 for h in self.routes.get(p, []):
                     self.log.debug('CCServer.handle_cc_recv: calling handler %s', h.hname)
