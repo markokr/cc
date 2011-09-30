@@ -1,0 +1,7 @@
+# sourced by /etc/init.d/cc
+
+# set to "yes" to launch daemon
+RUN="no"
+
+DEAMON_ARGS="-d /etc/cc/cc.ini"
+
