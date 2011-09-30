@@ -6,6 +6,6 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/python-distutils.mk
 
 install/cc::
-	install -D --mode=0644 $(CURDIR)/debian/cc.ini $(CURDIR)/debian/cc/etc/cc.ini
+	install -D --mode=0644 $(CURDIR)/debian/cc.ini $(CURDIR)/debian/cc/etc/cc/cc.ini
 	mv $(CURDIR)/debian/cc/usr/bin/ccserver.py $(CURDIR)/debian/cc/usr/bin/ccserver
 

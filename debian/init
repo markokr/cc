@@ -34,7 +34,7 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-DAEMON=/usr/bin/ccserver.py # Introduce the server's location here
+DAEMON=/usr/bin/ccserver    # Introduce the server's location here
 NAME=cc                     # Introduce the short server's name here
 DESC="Local CC"             # Introduce a short description here
 LOGDIR=/var/log/cc          # Log directory to use
