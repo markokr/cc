@@ -104,7 +104,8 @@ running_pid() {
     name=$2
     [ -z "$pid" ] && return 1
     [ ! -d /proc/$pid ] &&  return 1
-    cmd=`cat /proc/$pid/cmdline | tr "\000" "\n"|head -n 1 |cut -d : -f 1`
+    # cmdline is smth like "/usr/bin/python /usr/bin/ccserver params",extract the middle part
+    cmd=`cat /proc/$pid/cmdline | tr "\000" "\n"|head -n 2 | tail -n 1 |cut -d : -f 1`
     # Is this the expected server
     [ "$cmd" != "$name" ] &&  return 1
     return 0
@@ -144,8 +145,7 @@ stop_server() {
         else
 # if we are using a daemonuser then look for process that match
             start-stop-daemon --stop --quiet --pidfile $PIDFILE \
-                        --user $DAEMONUSER \
-                        --exec $DAEMON
+                        --user $DAEMONUSER
             errcode=$?
         fi
 

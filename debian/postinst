@@ -25,6 +25,7 @@ case "$1" in
 	mkdir -p /var/log/cc
 	mkdir -p /var/run/cc
 	chown cc:cc /var/log/cc /var/run/cc
+    chmod +x /etc/init.d/cc
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
