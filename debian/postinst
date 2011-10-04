@@ -14,6 +14,9 @@ ID="/usr/bin/id"
 
 case "$1" in
     configure)
+	mkdir -p /var/log/cc
+	mkdir -p /var/run/cc
+
 	if id $USER > /dev/null 2>&1; then
 		:
 	else
@@ -22,8 +25,6 @@ case "$1" in
 			$USER
 	fi
 
-	mkdir -p /var/log/cc
-	mkdir -p /var/run/cc
 	chown cc:cc /var/log/cc /var/run/cc
     ;;
 
