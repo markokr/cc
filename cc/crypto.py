@@ -403,15 +403,15 @@ class CryptoContext:
             return (None, None)
 
         if blob is not None:
-            h = sha1(blob).hexdigest()
-            if hasattr(msg, 'blob_hash'):
+            if getattr(msg, 'blob_hash', None):
+                h = sha1(blob).hexdigest()
                 if h != msg.blob_hash:
-                    self.log.error ('CryptoContext.parse_cmsg: blob has does not match: %s <> %s', h, msg.blob_hash)
+                    self.log.error ('CryptoContext.parse_cmsg: blob hash does not match: %s <> %s', h, msg.blob_hash)
                     return (None, None)
             else:
                 self.log.error ('CryptoContext.parse_cmsg: blob hash missing')
                 return (None, None)
-        elif hasattr(msg, 'blob_hash'):
+        elif getattr(msg, 'blob_hash', None):
             self.log.error ('CryptoContext.parse_cmsg: blob hash exists without blob')
             return (None, None)
         return msg, sgn
