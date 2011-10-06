@@ -3,5 +3,5 @@
 # set to "yes" to launch daemon
 RUN="no"
 
-DEAMON_ARGS="-d /etc/cc/cc.ini"
+DAEMON_ARGS="-d /etc/cc/cc.ini"
 
