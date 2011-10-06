@@ -10,6 +10,7 @@ UG="cc:cc"
 CHOWN="/bin/chown"
 ADDUSER="/usr/sbin/adduser"
 ID="/usr/bin/id"
+INGROUP="nagios"
 
 
 case "$1" in
@@ -23,6 +24,11 @@ case "$1" in
 		adduser --system --disabled-password --disabled-login \
 			--home /var/run/cc --no-create-home --group \
 			$USER
+        grep ^$INGROUP: /etc/group > /dev/null
+        groupexists=$?
+        if [ $groupexists == 0 ]; then
+            usermod -a $USER -G $INGROUP
+        fi
 	fi
 
 	chown cc:cc /var/log/cc /var/run/cc
