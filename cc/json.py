@@ -190,7 +190,7 @@ class _MetaStruct(type):
 
         def __setitem__(self, k, v):
             if k in _fields:
-                v = _fields[k](v)
+                v = _fields[k](k, v)
             dbdict.__setitem__(self, k, v)
 
         def __init__(self, *p, **kw):
@@ -201,9 +201,9 @@ class _MetaStruct(type):
                 # if fieldname is not given to init then use default
                 # when default is not set, use ancestor's default
                 if fieldname not in kw and field.default:
-                    val = field()
+                    val = field(fieldname)
                 else:
-                    val = field(self.get(fieldname))
+                    val = field(fieldname, self.get(fieldname))
                 self[fieldname] = val
 
             for key, val in self.iteritems():
@@ -212,6 +212,16 @@ class _MetaStruct(type):
                         self[key] = Struct(val)
                     elif type(val) == list:
                         self[key] = list_of(Struct)(val)
+
+        def validate(self):
+            for base in bases:
+                err = base.validate(self)
+                if err:
+                    return err
+            for k in _fields.keys():
+                if k not in self:
+                    return 'field %s missing in json' % k
+
 
         _attrs.update({'__init__': __init__, '__setitem__':__setitem__})
         return super(_MetaStruct, cls).__new__(cls, name, bases, _attrs)
@@ -230,14 +240,17 @@ class _MetaStruct(type):
 
 class Field(object):
     """Struct field definition"""
+
     def __init__(self, type = None, default = None):
         self.type = type
         self.default = default
 
-    def __call__(self, value = None):
+    def __call__(self, name, value = None):
         _value = value
         _default = self.default
         if _value is None:
+            if _default is None:
+                raise Exception('Field "%s" not set' % name)
             if callable(_default):
                 _default = _default()
             _value = _default
@@ -268,7 +281,6 @@ class Struct(dbdict):
         if cast:
             value = cast(value)
         return value
-
 
 #===============================================================================
 # Helpers and builders
