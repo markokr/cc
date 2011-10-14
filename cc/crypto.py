@@ -411,7 +411,7 @@ class CryptoContext:
             else:
                 self.log.error ('CryptoContext.parse_cmsg: blob hash missing')
                 return (None, None)
-        elif getattr(msg, 'blob_hash', None):
+        elif msg.get('blob_hash', None):
             self.log.error ('CryptoContext.parse_cmsg: blob hash exists without blob')
             return (None, None)
         return msg, sgn
