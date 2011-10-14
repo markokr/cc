@@ -78,7 +78,11 @@ class InfofileCollector(CCDaemon):
         fnlist = glob.glob (os.path.join (self.infodir, self.infomask))
         newlist = []
         for fn in fnlist:
-            st = os.stat(fn)
+            try:
+                st = os.stat(fn)
+            except OSError, e:
+                self.log.info('%s: %s', fn, str(e))
+                continue
             if fn not in self.infomap:
                 fstamp = InfoStamp(fn, st)
                 self.infomap[fn] = fstamp
@@ -92,7 +96,10 @@ class InfofileCollector(CCDaemon):
         self.connect_cc()
         newlist = self.find_new()
         for fs in newlist:
-            self.process_file(fs)
+            try:
+                self.process_file(fs)
+            except (OSError, IOError), e:
+                self.log.info('%s: %s', fn, str(e))
         self.stat_inc('changes', len(newlist))
 
 if __name__ == '__main__':
