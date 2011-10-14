@@ -92,6 +92,8 @@ class CCJob(skytools.DBScript):
         """ Query config """
         msg = JobConfigRequestMessage (job_name = self.job_name)
         rep = self.ccquery(msg)
+        cf = rep.config
+        cf['use_skylog'] = '0'
         return rep.config
 
     def load_config(self):
