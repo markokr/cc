@@ -4,7 +4,7 @@ import time
 from zmq.eventloop.ioloop import PeriodicCallback
 
 from cc.handler import CCHandler
-from cc.reqs import TaskReplyMessage
+from cc.reqs import TaskReplyMessage, ErrorMessage
 
 import skytools
 
@@ -67,6 +67,7 @@ class TaskRouter(CCHandler):
         Dispatch task reply to requestor (client).
         """
 
+        self.log.debug('taskrouter: got message: %r', cmsg)
         req = cmsg.get_dest()
         sreq = req.split('.')
 
@@ -120,10 +121,10 @@ class TaskRouter(CCHandler):
         """Send message for task executor on host"""
 
         msg = cmsg.get_payload (self.xtx)
-        host = msg.host
+        host = msg.task_host
 
         if host not in self.route_map:
-            self.log.info('TaskRouter.send_host: cannot route to %s', host)
+            self.ccerror(cmsg, 'cannot route to %s' % host)
             return
 
         inr = cmsg.get_route()          # route from/to client
@@ -131,7 +132,7 @@ class TaskRouter(CCHandler):
         cmsg.set_route (hr.route)       # re-construct message
 
         # send the message
-        self.log.info('TaskRouter.send_host: sending task to %s', host)
+        self.log.debug('TaskRouter.send_host: sending task to %s', host)
         cmsg.send_to (self.cclocal)
 
         # remember ZMQ route for replies
@@ -143,13 +144,14 @@ class TaskRouter(CCHandler):
         # send ack to client
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % uid,
-                handler = msg['handler'],
+                handler = msg['task_handler'],
                 task_id = msg['task_id'],
                 status = 'forwarded')
         rcm = self.xtx.create_cmsg (rep)
         rcm.set_route (inr)
         rcm.send_to (self.cclocal)
 
+        self.log.debug('TaskRouter.send_host: saved client for %r', uid)
 
     def send_reply (self, cmsg):
         """ Send reply message back to task requestor """
@@ -167,3 +169,14 @@ class TaskRouter(CCHandler):
         cmsg.set_route (rr.route)       # re-route message
         cmsg.send_to (self.cclocal)
         rr.atime = time.time()          # update feedback time
+
+    def ccreply(self, rep, creq):
+        crep = self.xtx.create_cmsg(rep)
+        crep.take_route(creq)
+        crep.send_to(self.cclocal)
+
+    def ccerror(self, cmsg, errmsg):
+        self.log.info(errmsg)
+        rep = ErrorMessage(msg = errmsg)
+        self.ccreply(rep, cmsg)
+
