@@ -1,4 +1,7 @@
 """Sample task.
+
+Params:
+    cmd - crash-launch / crash-run / other
 """
 
 import sys
