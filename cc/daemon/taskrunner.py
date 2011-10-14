@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 import signal
+import re
 
 from cc import json
 from cc.daemon import CCDaemon
@@ -24,6 +25,7 @@ from zmq.eventloop.ioloop import PeriodicCallback
 
 import skytools
 
+_TID_INVALID = re.compile('[^-a-zA-Z0-9_]')
 
 class TaskState (object):
     """ Tracks task state (with help of watchdog) """
@@ -56,17 +58,17 @@ class TaskState (object):
             self.log.exception ('TaskState.stop: signal_pidfile failed')
 
     def watchdog (self):
-            live = skytools.signal_pidfile (self.pidfile, 0)
-            if live:
-                self.log.debug ('TaskState.watchdog: %s is alive', self.name)
-                if self.heartbeat:
-                    self.send_reply ('running')
-            else:
-                self.log.info ('TaskState.watchdog: %s is over', self.name)
-                self.dead_since = time.time()
-                self.timer.stop()
-                self.timer = None
-                self.send_reply ('stopped')
+        live = skytools.signal_pidfile (self.pidfile, 0)
+        if live:
+            self.log.debug ('TaskState.watchdog: %s is alive', self.name)
+            if self.heartbeat:
+                self.send_reply ('running')
+        else:
+            self.log.info ('TaskState.watchdog: %s is over', self.name)
+            self.dead_since = time.time()
+            self.timer.stop()
+            self.timer = None
+            self.send_reply ('stopped')
 
     def ccpublish (self, msg):
         assert isinstance (msg, TaskReplyMessage)
@@ -76,7 +78,7 @@ class TaskState (object):
     def send_reply (self, status, feedback = {}):
         msg = TaskReplyMessage(
                 req = 'task.reply.%s' % self.uid,
-                handler = self.info['task']['handler'],
+                handler = self.info['task']['task_handler'],
                 task_id = self.info['task']['task_id'],
                 status = status,
                 feedback = feedback)
@@ -126,13 +128,17 @@ class TaskRunner(CCDaemon):
 
         msg = cmsg.get_payload(self.xtx)
         req = cmsg.get_dest()
-        uid = req.split('.')[2]
+        tid = msg['task_id']
 
-        if uid in self.tasks:
-            self.log.info ("Ignored task %s", uid)
+        if _TID_INVALID.search(tid):
+            self.log.error('Invalid task id: %r', tid)
             return
 
-        jname = 'task_%i' % msg.task_id
+        if tid in self.tasks:
+            self.log.info ("Ignored task %s", tid)
+            return
+
+        jname = 'task_%s' % tid
         jpidf = self.pidfile + '.' + jname
         info = {'task': msg,
                 'config': {
@@ -140,7 +146,9 @@ class TaskRunner(CCDaemon):
                 }}
         js = json.dumps(info)
 
-        mod = msg['handler']
+        self.task_reply(tid, 'starting')
+
+        mod = msg['task_handler']
         cmd = ['python', '-m', mod, '--cc', self.options.cc, '--cctask', jname, '-d']
         p = subprocess.Popen(cmd, 0,
                              stdin=subprocess.PIPE,
@@ -156,19 +164,24 @@ class TaskRunner(CCDaemon):
             st = 'launched'
         else:
             st = 'failed'
-        rep = TaskReplyMessage(
-                req = 'task.reply.%s' % uid,
-                handler = msg['handler'],
-                task_id = msg['task_id'],
-                status = st,
-                feedback = fb)
-        self.ccpublish (rep)
+        self.task_reply(tid, st, fb)
 
         if p.returncode == 0:
-            tstate = TaskState (uid, jname, info, self.log, self.ioloop, self.cc, self.xtx)
+            tstate = TaskState (tid, jname, info, self.log, self.ioloop, self.cc, self.xtx)
             tstate.heartbeat = self.task_heartbeat
-            self.tasks[uid] = tstate
+            self.tasks[tid] = tstate
             tstate.start()
+
+    def task_reply(self, tid, status, fb = {}, **kwargs):
+        fb = fb or kwargs
+        self.log.info('task_reply: %r - %r', status, fb)
+        rep = TaskReplyMessage(
+                req = 'task.reply.%s' % tid,
+                task_id = tid,
+                status = status,
+                feedback = fb)
+        self.log.info('msg: %r', rep)
+        self.ccpublish (rep)
 
     def work(self):
         """Default work loop simply runs ioloop."""
