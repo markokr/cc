@@ -7,16 +7,18 @@ from cc.message import CCMessage
 __all__ = ['LogMessage', 'InfofileMessage', 'JobRequestMessage', 'JobConfigReplyMessage', 'TaskRegisterMessage', 'TaskSendMessage']
 
 class BaseMessage(Struct):
-    req = Field(str)
+    # needs default as json.py seems to get inheritance wrong
+    req = Field(str, '?')
+
     time = Field(float, default = time.time)
     hostname = Field(str, default = socket.gethostname())
-    blob_hash = Field(str, default = None)
+    #blob_hash = Field(str, default = '')
 
 class ReplyMessage (BaseMessage):
-    "reply.*"
+    req = Field(str, "reply")
 
 class ErrorMessage (ReplyMessage):
-    "error.*"
+    req = Field(str, "error")
     msg = Field(str)
 
 class LogMessage(BaseMessage):
@@ -52,15 +54,15 @@ class TaskRegisterMessage(BaseMessage):
     host = Field(str)
 
 class TaskSendMessage(BaseMessage):
-    "task.send.*"
-    host = Field(str)
-    handler = Field(str)
-    task_id = Field(int)
+    """Request to execute a task"""
+    req = Field(str, "task.send")
+    task_host = Field(str)
+    task_handler = Field(str)
+    task_id = Field(str)
 
 class TaskReplyMessage (BaseMessage):
-    "task.reply.*"
-    handler = Field(str)
-    task_id = Field(int)
+    req = Field(str, "task.reply")
+    task_id = Field(str)
     status = Field(str) # launched, feedback, finished, failed, running, stopped
     #feedback = Field(dict)
 
