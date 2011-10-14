@@ -1,11 +1,34 @@
 
-import sys
+import sys, os, os.path
 
 import skytools
 
 from cc import json
 from cc.job import CCJob
 from cc.reqs import TaskReplyMessage
+
+def get_task_handlers():
+    """Returns list of handler modules.
+    
+    Returns dict: (module_name -> docstr)
+    """
+
+    d = os.path.dirname(__file__)
+    res = {}
+    for fn in os.listdir(d):
+        if fn[0] in ('.', '_'):
+            continue
+        name, ext = os.path.splitext(fn)
+        if ext == '.py':
+            mod = 'cc.task.' + name
+            try:
+                __import__(mod, level=0)
+                m = sys.modules[mod]
+                desc = m.__doc__
+            except:
+                desc = '<broken>'
+            res[mod] = desc
+    return res
 
 #
 # Base class for tasks
