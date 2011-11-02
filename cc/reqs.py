@@ -38,7 +38,7 @@ class InfofileMessage(BaseMessage):
     filename = Field(str)
     data = Field(str)                   # file contents (data fork)
     comp = Field(str)                   # compression method used
-    mode = Field(str)                   # file mode to use for fopen
+    mode = Field(str, default='b')      # file mode to use for fopen
 
 class JobConfigRequestMessage(BaseMessage):
     req = Field(str, "job.config")
