@@ -70,22 +70,22 @@ class CCJob(skytools.DBScript):
         cmsg = self.logxtx.create_cmsg(msg)
         cmsg.send_to (self.cc)
 
-    def ccquery(self, msg):
+    def ccquery (self, msg, blob = None):
         """Sends query to CC, waits for answer."""
         assert isinstance (msg, BaseMessage)
         if not self.cc: self.connect_cc()
 
-        cmsg = self.xtx.create_cmsg(msg)
+        cmsg = self.xtx.create_cmsg (msg, blob)
         cmsg.send_to (self.cc)
 
         crep = CCMessage(self.cc.recv_multipart())
         return crep.get_payload(self.xtx)
 
-    def ccpublish(self, msg):
-        assert isinstance(msg, BaseMessage)
+    def ccpublish (self, msg, blob = None):
+        assert isinstance (msg, BaseMessage)
         if not self.cc:
             self.connect_cc()
-        cmsg = self.xtx.create_cmsg(msg)
+        cmsg = self.xtx.create_cmsg (msg, blob)
         cmsg.send_to (self.cc)
 
     def fetch_config(self):
