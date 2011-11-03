@@ -4,6 +4,7 @@
 import uuid
 from zmq.eventloop import IOLoop
 from cc.stream import CCReqStream
+from cc.reqs import TaskSendMessage
 
 class TaskInfo:
     """Per-task state, replies."""
