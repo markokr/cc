@@ -269,11 +269,11 @@ class Struct(dbdict):
     @classmethod
     def from_json(cls, jsonstr):
         """creates object from json string"""
-        return cls(json.loads(jsonstr))
+        return cls(loads(jsonstr))
 
     def dump_json(self):
         """dumps object to json string"""
-        return json.dumps(self)
+        return dumps(self)
 
     def getas(self, name, cast = None, default = None):
         """get value by name with optional casting and default"""
