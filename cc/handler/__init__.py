@@ -47,12 +47,14 @@ class CCHandler(object):
 #
 
 _short_names = {
-    'proxy': 'cc.handler.proxy',
     'dbhandler': 'cc.handler.database',
-    'taskrouter': 'cc.handler.taskrouter',
+    'disposer': 'cc.handler.disposer',
     'infowriter': 'cc.handler.infowriter',
     'jobmgr': 'cc.handler.jobmgr',
     'locallogger': 'cc.handler.locallogger',
+    'proxy': 'cc.handler.proxy',
+    'tailwriter': 'cc.handler.tailwriter',
+    'taskrouter': 'cc.handler.taskrouter',
 }
 
 def cc_handler_lookup(name, cur_role):
