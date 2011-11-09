@@ -48,7 +48,7 @@ class TaskInfo:
             done = True
             self.log.error('got error: %r', msg)
         elif tup[:2] == ['task', 'reply']:
-            done = msg.status in ('finished', 'failed')
+            done = msg.status in ('finished', 'failed', 'stopped')
             self.log.debug('got result: %r', msg)
         else:
             done = False
