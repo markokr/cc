@@ -14,3 +14,6 @@ deb:
 lint:
 	pylint -E --rcfile conf/pylint.cfg cc
 
+test:
+	python -m cc.test
+
