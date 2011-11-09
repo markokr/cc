@@ -6,12 +6,14 @@ Params:
 
 import sys
 import time
-
+import logging
 import skytools
 
 from cc.task import CCTask
 
 class SampleTask(CCTask):
+
+    log = logging.getLogger('cc.task.sample')
 
     def fetch_config(self):
 

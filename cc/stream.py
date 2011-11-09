@@ -1,7 +1,7 @@
 """Wrapper around ZMQStream
 """
 
-import zmq, time
+import zmq, time, logging
 from zmq.eventloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 from cc.message import CCMessage
@@ -33,6 +33,7 @@ class CCStream(ZMQStream):
 
 class QueryInfo:
     """Store callback details for query."""
+    log = logging.getLogger('cc.stream.QueryInfo')
     def __init__(self, qid, cmsg, cbfunc, rqs):
         self.qid = qid
         self.orig_cmsg = cmsg
@@ -40,7 +41,6 @@ class QueryInfo:
         self.timeout_ref = None
         self.ioloop = rqs.ioloop
         self.remove_query = rqs.remove_query
-        self.log = rqs.log
 
     def on_timeout(self):
         """Called by ioloop on timeout, needs to handle exceptions"""
@@ -53,7 +53,7 @@ class QueryInfo:
     def launch_cb(self, arg):
         """Run callback, re-wire timeout and query if needed."""
         keep, timeout = self.cbfunc(arg)
-        self.log.debug('QueryInfo.launch_cb: keep=%r', keep)
+        self.log.debug('keep=%r', keep)
         if keep:
             self.set_timeout(timeout)
         else:
@@ -77,7 +77,10 @@ class CCReqStream:
     Add request-id into route, later map replies to original request
     based on that.
     """
-    def __init__(self, cc_url, xtx, log, ioloop=None, zctx=None):
+
+    log = logging.getLogger('cc.stream.CCReqStream')
+
+    def __init__(self, cc_url, xtx, ioloop=None, zctx=None):
         """Initialize stream."""
 
         zctx = zctx or zmq.Context.instance()
@@ -90,7 +93,6 @@ class CCReqStream:
         self.ccs = CCStream(s, ioloop)
         self.ioloop = ioloop
         self.xtx = xtx
-        self.log = log
 
         self.query_id_seq = 1
         self.query_cache = {}
@@ -162,12 +164,12 @@ class CCReqStream:
 
         route = cmsg.get_route()
         if len(route) != 1:
-            self.log.error('CCReqStream: Invalid reply route: %r', route)
+            self.log.error('Invalid reply route: %r', route)
             return
 
         qid = route[0]
         if qid not in self.query_cache:
-            self.log.error('CCReqStream: reply for unknown query: %r', qid)
+            self.log.error('reply for unknown query: %r', qid)
             return
 
         msg = cmsg.get_payload(self.xtx)

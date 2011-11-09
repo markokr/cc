@@ -1,4 +1,5 @@
 
+import logging
 import zmq
 
 from cc.handler import CCHandler
@@ -17,6 +18,8 @@ class ProxyHandler(CCHandler):
     """Simply proxies further"""
 
     CC_ROLES = ['local', 'remote']
+
+    log = logging.getLogger('cc.handler.proxy')
 
     def __init__(self, hname, hcf, ccscript):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)

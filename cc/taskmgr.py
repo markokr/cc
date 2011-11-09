@@ -2,18 +2,19 @@
 """
 
 import uuid
+import logging
 from zmq.eventloop import IOLoop
 from cc.stream import CCReqStream
 from cc.reqs import TaskSendMessage
 
 class TaskInfo:
     """Per-task state, replies."""
-    def __init__(self, task, task_cbfunc, log, ccrq):
+    log = logging.getLogger('cc.taskmgr.TaskInfo')
+    def __init__(self, task, task_cbfunc, ccrq):
         self.task = task
         self.uuid = task['task_id']
         self.task_cbfunc = task_cbfunc
         self.replies = []
-        self.log = log
         self.ccrq = ccrq
         self.retry_count = 3
         self.retry_timeout = 15
@@ -32,10 +33,9 @@ class TaskInfo:
         Returns tuple of (keep, timeout) to CCReqStream.
         """
 
-        self.log.debug('TaskInfo.process_reply: %r', msg)
         if msg is None:
             if self.retry_count > 0:
-                self.log.warning('TaskInfo.process_reply: timeout, resending')
+                self.log.warning('timeout, resending')
                 self.retry_count -= 1
                 self.ccrq.resend(self.query_id)
                 return (True, self.retry_timeout)
@@ -49,10 +49,10 @@ class TaskInfo:
             self.log.error('got error: %r', msg)
         elif tup[:2] == ['task', 'reply']:
             done = msg.status in ('finished', 'failed')
-            self.log.info('got result: %r', msg)
+            self.log.debug('got result: %r', msg)
         else:
             done = False
-            self.log.info('got random: %r', msg)
+            self.log.debug('got random: %r', msg)
         self.replies.append(msg)
         self.task_cbfunc(done, msg)
         self.log.debug('TaskInfo.process_reply: done=%r', done)
@@ -63,10 +63,11 @@ class TaskInfo:
 class TaskManager:
     """Manages task on single CCReqStream connection."""
 
-    def __init__(self, ccrq, log):
+    log = logging.getLogger('cc.taskmgr.TaskManager')
+
+    def __init__(self, ccrq):
         self.ccrq = ccrq
         self.ioloop = ccrq.ioloop
-        self.log = log
 
     def send_task_async(self, task, task_cbfunc):
         """Async task launch.
@@ -79,7 +80,7 @@ class TaskManager:
         assert isinstance(task, TaskSendMessage)
 
         self.log.debug('TaskManager.send_task_async(%r, %r)', task, task_cbfunc)
-        ti = TaskInfo(task, task_cbfunc, self.log, self.ccrq)
+        ti = TaskInfo(task, task_cbfunc, self.ccrq)
         ti.send_task()
         return ti
 

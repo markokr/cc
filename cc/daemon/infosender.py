@@ -6,6 +6,7 @@
 import glob
 import os, os.path
 import sys
+import logging
 
 import cc.util
 
@@ -34,6 +35,8 @@ class InfoStamp:
             return 0
 
 class InfofileCollector(CCDaemon):
+
+    log = logging.getLogger('cc.daemon.infosender.InfofileCollector')
 
     def reload(self):
         super(InfofileCollector, self).reload()
@@ -99,7 +102,7 @@ class InfofileCollector(CCDaemon):
             try:
                 self.process_file(fs)
             except (OSError, IOError), e:
-                self.log.info('%s: %s', fn, str(e))
+                self.log.info('%s: %s', fs.filename, str(e))
         self.stat_inc('changes', len(newlist))
 
 if __name__ == '__main__':

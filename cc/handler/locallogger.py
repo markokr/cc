@@ -1,5 +1,7 @@
 """Local logger."""
 
+import logging
+
 from cc.handler import CCHandler
 
 __all__ = ['LocalLogger']
@@ -10,6 +12,8 @@ class LocalLogger(CCHandler):
     """Log as local log msg."""
 
     CC_ROLES = ['local', 'remote']
+
+    log = logging.getLogger('cc.handler.locallogger')
 
     def handle_msg(self, cmsg):
         msg = cmsg.get_payload(self.xtx)

@@ -41,16 +41,17 @@ class CCJob(skytools.DBScript):
 
     def __init__(self, service_type, args):
         # no crypto for logs
-        self.logxtx = CryptoContext(None, NoLog())
-        self.xtx = CryptoContext(None, NoLog())
+        self.logxtx = CryptoContext(None)
+        self.xtx = CryptoContext(None)
 
         super(CCJob, self).__init__(service_type, args)
 
         self.hostname = socket.gethostname()
 
-        self.log.addHandler(CallbackLogger(self.emit_log))
+        root = logging.getLogger()
+        root.addHandler(CallbackLogger(self.emit_log))
 
-        self.xtx = CryptoContext(self.cf, self.log)
+        self.xtx = CryptoContext(self.cf)
 
     def emit_log(self, rec):
         if not self.cc:

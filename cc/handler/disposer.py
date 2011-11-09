@@ -1,3 +1,5 @@
+import logging
+
 from cc.handler import CCHandler
 
 __all__ = ['Disposer']
@@ -8,6 +10,8 @@ class Disposer (CCHandler):
     """ Discards any message received """
 
     CC_ROLES = ['local', 'remote']
+
+    log = logging.getLogger('cc.handler.disposer')
 
     def handle_msg (self, cmsg):
         """ Got message from client -- discard it :-) """
