@@ -59,7 +59,6 @@ class CCServer(skytools.BaseScript):
         self.local_url = self.cf.get('cc-socket')
 
         self.cur_role = self.cf.get('cc-role', 'insecure')
-
         if self.cur_role == 'insecure':
             self.log.warning('CC is running in insecure mode, please add "cc-role = local" or "cc-role = remote" option to config')
 
@@ -90,6 +89,11 @@ class CCServer(skytools.BaseScript):
                     h = cls(hname, hcf, self)
                     self.handlers[hname] = h
                 self.add_handler(r, h)
+
+        self.hb_period = self.cf.getint ('heartbeat', 60)
+        if self.hb_period > 0:
+            self.hb_timer = PeriodicCallback (self.heartbeat, self.hb_period * 1000, self.ioloop)
+            self.hb_timer.start()
 
         self.stimer = PeriodicCallback(self.send_stats, 5*1000, self.ioloop)
         self.stimer.start()
@@ -137,6 +141,9 @@ class CCServer(skytools.BaseScript):
         except Exception:
             self.log.exception('CCServer.handle_cc_recv crashed, dropping msg: %s', cmsg.get_dest())
 
+    def heartbeat (self):
+        self.log.info ("heartbeat")
+
     def work(self):
         """Default work loop simply runs ioloop."""
         self.set_single_loop(1)
@@ -164,4 +171,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
