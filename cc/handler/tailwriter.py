@@ -23,7 +23,7 @@ class TailWriter (CCHandler):
 
         self.dstdir = self.cf.getfile ('dstdir')
         self.host_subdirs = self.cf.getboolean ('host-subdirs', 0)
-        self.maint_period = self.cf.getint ('maint-period', 30)
+        self.maint_period = self.cf.getint ('maint-period', 3)
         self.files = {}
 
         self.ioloop = IOLoop.instance()
@@ -66,25 +66,33 @@ class TailWriter (CCHandler):
             fobj = open (dstfn, 'a' + mode)
             self.log.info ('TailWriter.handle_msg: opened %s', dstfn)
 
-            fd = { 'obj': fobj, 'mode': mode, 'path': dstfn }
+            fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
+                   'ftime': time.time() }
             self.files[fi] = fd
 
-        body = data['data'].decode('base64')
+        body = cmsg.get_part3() # blob
+        if not body:
+            body = data['data'].decode('base64')
 
         # append to file
         self.log.debug ('TailWriter.handle_msg: appending data to %s', fd['path'])
         fd['obj'].write (body)
-        fd['time'] = time.time()
+        fd['wtime'] = time.time()
 
     def do_maint (self):
-        """ Close long open files """
+        """ Close long-open files; flush inactive files. """
         self.log.debug ("TailWriter.do_maint")
         now = time.time()
         for k, fd in self.files.iteritems():
-            if now - fd['time'] > 30: # XXX: make configurable (also maxfiles)
+            if now - fd['wtime'] > 30: # XXX: make configurable (also maxfiles)
                 fd['obj'].close()
                 self.log.info ('TailWriter.do_maint: closed %s', fd['path'])
                 del self.files[k]
+            elif (fd['wtime'] > fd['ftime']) and (now - fd['wtime'] > 3): # XXX: make configurable ?
+                # note: think about small writes within flush period
+                fd['obj'].flush()
+                self.log.debug ('TailWriter.do_maint: flushed %s', fd['path'])
+                fd['ftime'] = now
 
     def stop (self):
         """ Close all open files """
