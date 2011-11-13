@@ -142,7 +142,7 @@ class CCServer(skytools.BaseScript):
             self.log.exception('CCServer.handle_cc_recv crashed, dropping msg: %s', cmsg.get_dest())
 
     def heartbeat (self):
-        self.log.info ("heartbeat")
+        self.log.info ("CCServer.heartbeat")
 
     def work(self):
         """Default work loop simply runs ioloop."""
