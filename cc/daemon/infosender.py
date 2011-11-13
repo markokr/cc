@@ -44,6 +44,7 @@ class InfofileCollector(CCDaemon):
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
+        self.use_blob = self.cf.getboolean ('use-blob', False)
 
     def startup(self):
         super(InfofileCollector, self).startup()
@@ -67,12 +68,20 @@ class InfofileCollector(CCDaemon):
     def send_file(self, fs, body):
         cfb = cc.util.compress (body, self.compression, {'level': self.compression_level})
         self.log.debug ("file compressed from %i to %i", len(body), len(cfb))
-        msg = InfofileMessage(
-                filename = os.path.basename(fs.filename),
-                mtime = fs.filestat.st_mtime,
-                comp = self.compression,
-                data = cfb.encode('base64'))
-        self.ccpublish(msg)
+        if self.use_blob:
+            msg = InfofileMessage(
+                    filename = os.path.basename(fs.filename),
+                    mtime = fs.filestat.st_mtime,
+                    comp = self.compression,
+                    data = '')
+            self.ccpublish (msg, cfb)
+        else:
+            msg = InfofileMessage(
+                    filename = os.path.basename(fs.filename),
+                    mtime = fs.filestat.st_mtime,
+                    comp = self.compression,
+                    data = cfb.encode('base64'))
+            self.ccpublish (msg)
 
     def find_new(self):
         fnlist = glob.glob (os.path.join (self.infodir, self.infomask))

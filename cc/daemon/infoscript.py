@@ -46,6 +46,7 @@ class InfoScript(CCDaemon):
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
+        self.use_blob = self.cf.getboolean ('use-blob', False)
 
         self.timer = StrictPeriod(self.run_info_script, self.info_period*1000, self.ioloop)
         self.timer.start()
@@ -66,12 +67,20 @@ class InfoScript(CCDaemon):
         body = cc.util.compress (res, self.compression, {'level': self.compression_level})
         self.log.debug ("output compressed from %i to %i", len(res), len(body))
 
-        msg = InfofileMessage(
-                filename = self.info_name,
-                mtime = time.time(),
-                comp = self.compression,
-                data = body.encode('base64'))
-        self.ccpublish(msg)
+        if self.use_blob:
+            msg = InfofileMessage(
+                    filename = self.info_name,
+                    mtime = time.time(),
+                    comp = self.compression,
+                    data = '')
+            self.ccpublish (msg, body)
+        else:
+            msg = InfofileMessage(
+                    filename = self.info_name,
+                    mtime = time.time(),
+                    comp = self.compression,
+                    data = body.encode('base64'))
+            self.ccpublish (msg)
 
     def work(self):
         self.log.info("Starting IOLoop")

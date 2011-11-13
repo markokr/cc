@@ -76,7 +76,10 @@ class InfoWriter(CCHandler):
         except OSError:
             pass
 
-        raw = data['data'].decode('base64')
+        raw = cmsg.get_part3() # blob
+        if not raw:
+            raw = data['data'].decode('base64')
+
         if self.write_compressed in [None, '', 'no', 'keep']:
             if self.write_compressed != 'keep':
                 body = cc.util.decompress (raw, data['comp'])
