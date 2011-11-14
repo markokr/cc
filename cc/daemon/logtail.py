@@ -73,7 +73,9 @@ class LogfileTailer (CCDaemon):
                 self.logf = open (name, 'rb')
                 self.logfile = name
                 self.logfpos = 0
+                self.send_stats() # better do it async me think (?)
                 self.log.info ("Tailing %s", self.logfile)
+                self.stat_inc ('tailed_files')
                 self.tailed_files += 1
                 self.probesleft = 2
             except IOError, e:
@@ -110,7 +112,9 @@ class LogfileTailer (CCDaemon):
             # reset EOF condition for next attempt
             self.logf.seek (0, os.SEEK_CUR)
 
-            if self.logfile != self.get_last_filename():
+            if self.bufsize > 0:
+                self.send_frag()
+            elif self.logfile != self.get_last_filename():
                 if self.probesleft <= 0:
                     self.send_frag()
                     self.logf.close()
@@ -135,6 +139,7 @@ class LogfileTailer (CCDaemon):
                     filename = self.logfile,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
+        self.stat_inc ('tailed_bytes', self.bufsize)
         self.buffer = []
         self.bufsize = 0
 
@@ -145,8 +150,6 @@ class LogfileTailer (CCDaemon):
             self.tail()
         except (IOError, OSError), e:
             self.log.warn ("%s", e)
-        self.stat_inc ('tailed_files', self.tailed_files)
-        self.stat_inc ('tailed_bytes', self.tailed_bytes)
         return 1
 
 
