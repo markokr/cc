@@ -90,7 +90,7 @@ class InfofileCollector(CCDaemon):
             try:
                 st = os.stat(fn)
             except OSError, e:
-                self.log.info('%s: %s', fn, str(e))
+                self.log.info('%s: %s', fn, e)
                 continue
             if fn not in self.infomap:
                 fstamp = InfoStamp(fn, st)
@@ -108,7 +108,7 @@ class InfofileCollector(CCDaemon):
             try:
                 self.process_file(fs)
             except (OSError, IOError), e:
-                self.log.info('%s: %s', fn, str(e))
+                self.log.info('%s: %s', fs.filename, e)
         self.stat_inc('changes', len(newlist))
 
 if __name__ == '__main__':
