@@ -28,12 +28,13 @@ CC_HANDLER = 'DBHandler'
 class DBWorker(threading.Thread):
     """Worker thread, can do blocking calls."""
 
-    def __init__(self, name, zctx, worker_url, connstr, log, func_list, xtx):
+    log = logging.getLogger('cc.handler.database.DBWorker')
+
+    def __init__(self, name, zctx, worker_url, connstr, func_list, xtx):
         super(DBWorker, self).__init__(name=name)
         self.zctx = zctx
         self.worker_url = worker_url
         self.connstr = connstr
-        self.log = log
         self.db = None
         self.wconn = None
         self.func_list = func_list
@@ -112,6 +113,8 @@ class DBHandler(ProxyHandler):
 
     CC_ROLES = ['remote']
 
+    log = logging.getLogger('cc.handler.database.DBHandler')
+
     def make_socket(self):
         baseurl = 'tcp://127.0.0.1'
         s = self.zctx.socket(zmq.XREQ)
@@ -127,7 +130,6 @@ class DBHandler(ProxyHandler):
         for i in range(nworkers):
             wname = '.worker%d' % i
             self.log.info('launching: %s.%s', self.hname, wname)
-            log = self.log
             w = DBWorker(self.hname + '.' + wname, self.zctx, self.worker_url,
-                         connstr, log, func_list, self.xtx)
+                         connstr, func_list, self.xtx)
             w.start()

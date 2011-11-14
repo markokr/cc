@@ -1,4 +1,5 @@
 import os, os.path
+import logging
 
 import cc.util
 
@@ -21,6 +22,8 @@ class InfoWriter(CCHandler):
     """Simply writes to files."""
 
     CC_ROLES = ['remote']
+
+    log = logging.getLogger('cc.handler.infowriter')
 
     def __init__(self, hname, hcf, ccscript):
         super(InfoWriter, self).__init__(hname, hcf, ccscript)

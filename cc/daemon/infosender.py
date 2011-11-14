@@ -6,6 +6,7 @@
 import glob
 import os, os.path
 import sys
+import logging
 
 import cc.util
 
@@ -34,6 +35,8 @@ class InfoStamp:
             return 0
 
 class InfofileCollector(CCDaemon):
+
+    log = logging.getLogger('cc.daemon.infosender.InfofileCollector')
 
     def reload(self):
         super(InfofileCollector, self).reload()

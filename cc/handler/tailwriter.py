@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
@@ -17,6 +18,8 @@ class TailWriter (CCHandler):
     """ Simply appends to files """
 
     CC_ROLES = ['remote']
+
+    log = logging.getLogger('cc.handler.tailwriter')
 
     def __init__ (self, hname, hcf, ccscript):
         super(TailWriter, self).__init__(hname, hcf, ccscript)

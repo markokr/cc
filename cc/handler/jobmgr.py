@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import time
+import logging
 
 from zmq.eventloop.ioloop import PeriodicCallback
 
@@ -25,11 +26,11 @@ CC_HANDLER = 'JobMgr'
 TIMER_TICK = 2
 
 class JobState:
-    def __init__(self, jname, jcf, log, cc_url, ioloop, pidfiledir, xtx):
+    log = logging.getLogger('cc.handler.jobmgr.JobState')
+    def __init__(self, jname, jcf, cc_url, ioloop, pidfiledir, xtx):
         self.jname = jname
         self.jcf = jcf
         self.proc = None
-        self.log = log
         self.cc_url = cc_url
         self.timer = None
         self.ioloop = ioloop
@@ -56,13 +57,13 @@ class JobState:
 
     def handle_timer(self):
         if self.proc:
-            self.log.info ('JobState.handle_timer: checking on %s (%i)', self.jname, self.proc.pid)
+            self.log.debug('checking on %s (%i)', self.jname, self.proc.pid)
             data = self.proc.stdout.read()
             if data:
-                self.log.info ('JobState.handle_timer: stdout=%r', data)
+                self.log.info('Job %s stdout: %r', self.jname, data)
             rc = self.proc.poll()
             if rc is not None:
-                self.log.info ('JobState.handle_timer: proc exited with %s', rc)
+                self.log.debug('proc exited with %s', rc)
                 self.proc = None
         else:
             # daemonization successful?
@@ -137,11 +138,11 @@ class JobMgr(CCHandler):
         for dname in self.cf.getlist('daemons'):
             self.add_job(dname)
 
-        self.xtx = CryptoContext(None, self.log)
+        self.xtx = CryptoContext(None)
 
     def add_job(self, jname):
         jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
-        jstate = JobState(jname, jcf, self.log, self.local_url, self.ioloop, self.pidfiledir, self.xtx)
+        jstate = JobState(jname, jcf, self.local_url, self.ioloop, self.pidfiledir, self.xtx)
         self.jobs[jname] = jstate
         jstate.start()
 

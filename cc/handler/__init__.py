@@ -14,6 +14,7 @@ It would be preferable to reduce everything to write to socket.
 """
 
 import sys
+import logging
 
 __all__ = ['CCHandler', 'cc_handler_lookup']
 
@@ -24,6 +25,8 @@ __all__ = ['CCHandler', 'cc_handler_lookup']
 class CCHandler(object):
     """Basic handler interface."""
 
+    log = logging.getLogger('cc.handler.CCHandler')
+
     def __init__(self, hname, hcf, ccscript):
         """Store handler config."""
         self.hname = hname
@@ -31,7 +34,6 @@ class CCHandler(object):
         self.cclocal = ccscript.local
         self.zctx = ccscript.zctx
         self.ioloop = ccscript.ioloop
-        self.log = ccscript.log
         self.xtx = ccscript.xtx
 
     def handle_msg(self, rmsg):

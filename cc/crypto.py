@@ -9,6 +9,7 @@ Formatting messages for ZMQ packets is done in cc.message module.
 
 import os.path
 import time
+import logging
 
 from hashlib import sha1
 from M2Crypto import SMIME, BIO, X509
@@ -311,8 +312,10 @@ class CMSTool:
 #
 
 class CryptoContext:
-    def __init__(self, cf, log):
-        self.log = log
+
+    log = logging.getLogger('cc.crypto.CryptoContext')
+
+    def __init__(self, cf):
         if not cf:
             self.cms = None
             self.ks_dir = ''
