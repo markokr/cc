@@ -86,16 +86,19 @@ class TailWriter (CCHandler):
         """ Close long-open files; flush inactive files. """
         self.log.debug('')
         now = time.time()
+        zombies = []
         for k, fd in self.files.iteritems():
             if now - fd['wtime'] > 30: # XXX: make configurable (also maxfiles)
                 fd['obj'].close()
                 self.log.info ('closed %s', fd['path'])
-                del self.files[k]
+                zombies.append(k)
             elif (fd['wtime'] > fd['ftime']) and (now - fd['wtime'] > 3): # XXX: make configurable ?
                 # note: think about small writes within flush period
                 fd['obj'].flush()
                 self.log.debug ('flushed %s', fd['path'])
                 fd['ftime'] = now
+        for k in zombies:
+                self.files.pop(k)
 
     def stop (self):
         """ Close all open files """
