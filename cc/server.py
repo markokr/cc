@@ -115,13 +115,14 @@ class CCServer(skytools.BaseScript):
                     self.handlers[hname] = h
                 self.add_handler(r, h)
 
-        self.hb_period = self.cf.getint ('heartbeat', 60)
-        if self.hb_period > 0:
-            self.hb_timer = PeriodicCallback (self.heartbeat, self.hb_period * 1000, self.ioloop)
-            self.hb_timer.start()
-
-        self.stimer = PeriodicCallback(self.send_stats, 5*1000, self.ioloop)
+        self.stimer = PeriodicCallback(self.send_stats, 30*1000, self.ioloop)
         self.stimer.start()
+
+    def send_stats(self):
+        # make sure we have something to send
+        self.stat_increase('count', 0)
+
+        super(CCServer, self).send_stats()
 
     def add_handler(self, rname, handler):
         """Add route to handler"""
@@ -165,9 +166,6 @@ class CCServer(skytools.BaseScript):
 
         except Exception:
             self.log.exception('crashed, dropping msg: %s', cmsg.get_dest())
-
-    def heartbeat(self):
-        self.log.info('.')
 
     def work(self):
         """Default work loop simply runs ioloop."""
