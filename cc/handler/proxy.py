@@ -19,7 +19,7 @@ class ProxyHandler(CCHandler):
 
     CC_ROLES = ['local', 'remote']
 
-    log = logging.getLogger('cc.handler.proxy')
+    log = logging.getLogger('h:ProxyHandler')
 
     def __init__(self, hname, hcf, ccscript):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)
@@ -45,14 +45,14 @@ class ProxyHandler(CCHandler):
     def on_recv(self, zmsg):
         """Got message from remote CC, send to client."""
         try:
-            self.log.debug('ProxyHandler.on_recv')
+            self.log.debug('')
             self.stat_increase('count')
             self.stat_increase('bytes', zmsg_size(zmsg))
             self.cclocal.send_multipart(zmsg)
         except:
-            self.log.exception('ProxyHandler.on_recv crashed, dropping msg')
+            self.log.exception('crashed, dropping msg')
 
     def handle_msg(self, cmsg):
-        """Got message from client, send to remote CC"""
-        self.log.debug('ProxyHandler.handle_msg')
+        """Got message from client, send to remote CC."""
+        self.log.debug('')
         self.stream.send_cmsg(cmsg)

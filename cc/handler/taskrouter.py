@@ -1,4 +1,5 @@
 
+import logging
 import time
 
 from zmq.eventloop.ioloop import PeriodicCallback
@@ -45,6 +46,8 @@ class TaskRouter(CCHandler):
     Clean old ones.
     """
 
+    log = logging.getLogger('h:TaskRouter')
+
     CC_ROLES = ['remote']
 
     def __init__(self, *args):
@@ -67,7 +70,7 @@ class TaskRouter(CCHandler):
         Dispatch task reply to requestor (client).
         """
 
-        self.log.debug('taskrouter: got message: %r', cmsg)
+        self.log.debug('got message: %r', cmsg)
         req = cmsg.get_dest()
         sreq = req.split('.')
 
@@ -78,19 +81,19 @@ class TaskRouter(CCHandler):
         elif sreq[:2] == ['task','reply']:
             self.send_reply (cmsg)
         else:
-            self.log.warning('TaskRouter.handle_msg: unknown msg: %s', req)
+            self.log.warning('unknown msg: %s', req)
 
 
     def do_maint(self):
         """Drop old routes"""
-        self.log.info('TaskRouter.do_maint')
+        self.log.debug('cleanup')
         now = time.time()
         zombies = []
         for hr in self.route_map.itervalues():
             if now - hr.create_time > self.route_lifetime:
                 zombies.append(hr)
         for hr in zombies:
-            self.log.info('TaskRouter.do_maint: deleting route for %s', hr.host)
+            self.log.info('deleting route for %s', hr.host)
             del self.route_map[hr.host]
 
         zombies = []
@@ -98,7 +101,7 @@ class TaskRouter(CCHandler):
             if now - rr.atime > self.reply_timeout:
                 zombies.append(rr)
         for rr in zombies:
-            self.log.info('TaskRouter.do_maint: deleting reply route for %s', rr.uid)
+            self.log.info('deleting reply route for %s', rr.uid)
             del self.reply_map[rr.uid]
 
 
@@ -108,7 +111,7 @@ class TaskRouter(CCHandler):
         route = cmsg.get_route()
         msg = cmsg.get_payload (self.xtx)
         host = msg.host
-        self.log.info ('TaskRouter.register_host: (%s, %s)', host, route)
+        self.log.debug ('(%s, %s)', host, route)
         hr = HostRoute (host, route)
         self.route_map[hr.host] = hr
 
@@ -132,7 +135,7 @@ class TaskRouter(CCHandler):
         cmsg.set_route (hr.route)       # re-construct message
 
         # send the message
-        self.log.debug('TaskRouter.send_host: sending task to %s', host)
+        self.log.debug('sending task to %s', host)
         cmsg.send_to (self.cclocal)
 
         # remember ZMQ route for replies
@@ -151,7 +154,7 @@ class TaskRouter(CCHandler):
         rcm.set_route (inr)
         rcm.send_to (self.cclocal)
 
-        self.log.debug('TaskRouter.send_host: saved client for %r', uid)
+        self.log.debug('saved client for %r', uid)
 
     def send_reply (self, cmsg):
         """ Send reply message back to task requestor """
@@ -160,10 +163,10 @@ class TaskRouter(CCHandler):
         uid = req.split('.')[2]
 
         if uid not in self.reply_map:
-            self.log.info ("TaskRouter.send_reply: cannot route back: %s", req)
+            self.log.info ("cannot route back: %s", req)
             return
 
-        self.log.debug ("TaskRouter.send_reply: %s", req)
+        self.log.debug ("req: %s", req)
 
         rr = self.reply_map[uid]        # find ZMQ route
         cmsg.set_route (rr.route)       # re-route message
@@ -179,4 +182,3 @@ class TaskRouter(CCHandler):
         self.log.info(errmsg)
         rep = ErrorMessage(msg = errmsg)
         self.ccreply(rep, cmsg)
-

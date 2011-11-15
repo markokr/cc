@@ -1,9 +1,13 @@
 """Wrapper around ZMQStream
 """
 
-import zmq, time, logging
+import logging
+import time
+
+import zmq
 from zmq.eventloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
+
 from cc.message import CCMessage
 
 __all__ = ['CCStream', 'CCReqStream']
@@ -33,7 +37,8 @@ class CCStream(ZMQStream):
 
 class QueryInfo:
     """Store callback details for query."""
-    log = logging.getLogger('cc.stream.QueryInfo')
+    log = logging.getLogger('QueryInfo')
+
     def __init__(self, qid, cmsg, cbfunc, rqs):
         self.qid = qid
         self.orig_cmsg = cmsg
@@ -78,7 +83,7 @@ class CCReqStream:
     based on that.
     """
 
-    log = logging.getLogger('cc.stream.CCReqStream')
+    log = logging.getLogger('CCReqStream')
 
     def __init__(self, cc_url, xtx, ioloop=None, zctx=None):
         """Initialize stream."""
@@ -184,4 +189,3 @@ class CCReqStream:
             qi.set_timeout(timeout)
         else:
             pass # ?
-

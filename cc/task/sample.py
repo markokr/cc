@@ -4,9 +4,9 @@ Params:
     cmd - crash-launch / crash-run / other
 """
 
+import logging
 import sys
 import time
-import logging
 import skytools
 
 from cc.task import CCTask

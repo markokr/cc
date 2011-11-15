@@ -14,7 +14,7 @@ mkdir -p /tmp/infofiles
 
 for ini in conf/*.ini; do
   echo "starting $ini"
-  python -m cc.server -v -d $ini
+  python -m cc.server -d -v $ini
 done
 
 #echo 'sending db'

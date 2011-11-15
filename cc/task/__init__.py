@@ -1,5 +1,7 @@
 
-import sys, os, os.path
+import logging
+import os, os.path
+import sys
 
 import skytools
 
@@ -9,7 +11,7 @@ from cc.reqs import TaskReplyMessage
 
 def get_task_handlers():
     """Returns list of handler modules.
-    
+
     Returns dict: (module_name -> docstr)
     """
 
@@ -45,6 +47,8 @@ class CCTask(CCJob):
     task_uid = None
     task_finished = False
 
+    log = logging.getLogger('t:CCTask')
+
     def __init__(self, service_name, args):
         info = sys.stdin.read()
         self.task_info = json.Struct.from_json(info)
@@ -63,7 +67,7 @@ class CCTask(CCJob):
     def work(self):
         self.connect_cc()
         task = self.task_info['task']
-        self.log.info ('CCTask.work: %r', task)
+        self.log.info ('got task: %r', task)
         self.task_uid = task['req'].split('.')[2]
         self.process_task(task)
 

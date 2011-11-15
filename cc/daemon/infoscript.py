@@ -35,7 +35,7 @@ class InfoScript(CCDaemon):
     """Run script, send output.
     """
 
-    log = logging.getLogger('cc.daemon.infoscript')
+    log = logging.getLogger('d:InfoScript')
 
     def startup(self):
         super(InfoScript, self).startup()

@@ -11,6 +11,7 @@ Assumes that:
 """
 
 import glob
+import logging
 import os
 import sys
 import time
@@ -21,6 +22,8 @@ from cc.reqs import LogtailMessage
 
 class LogfileTailer (CCDaemon):
     """ Logfile tailer for rotated log files """
+
+    log = logging.getLogger ('d:LogfileTailer')
 
     def reload (self):
         super(LogfileTailer, self).reload()
@@ -139,6 +142,7 @@ class LogfileTailer (CCDaemon):
                     filename = self.logfile,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
+        self.log.debug ("sent %i bytes", self.bufsize)
         self.stat_inc ('tailed_bytes', self.bufsize)
         self.buffer = []
         self.bufsize = 0
@@ -149,7 +153,7 @@ class LogfileTailer (CCDaemon):
         try:
             self.tail()
         except (IOError, OSError), e:
-            self.log.warn ("%s", e)
+            self.log.error ("%s", e)
         return 1
 
 

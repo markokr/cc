@@ -4,7 +4,13 @@ Handler sets up a ZMQ socket on random port
 where workers connect to and receive messages.
 
 """
-import zmq, threading
+
+import logging
+import threading
+import time
+
+import skytools
+import zmq
 
 from cc.handler.proxy import ProxyHandler
 from cc.message import CCMessage
@@ -13,8 +19,6 @@ from cc.stream import CCStream
 from cc.job import CallbackLogger
 from cc.reqs import parse_json
 from cc.crypto import CryptoContext
-
-import skytools, logging, time
 
 
 __all__ = ['DBHandler']
@@ -28,7 +32,7 @@ CC_HANDLER = 'DBHandler'
 class DBWorker(threading.Thread):
     """Worker thread, can do blocking calls."""
 
-    log = logging.getLogger('cc.handler.database.DBWorker')
+    log = logging.getLogger('h:DBWorker')
 
     def __init__(self, name, zctx, worker_url, connstr, func_list, xtx):
         super(DBWorker, self).__init__(name=name)
@@ -113,7 +117,7 @@ class DBHandler(ProxyHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('cc.handler.database.DBHandler')
+    log = logging.getLogger('h:DBHandler')
 
     def make_socket(self):
         baseurl = 'tcp://127.0.0.1'

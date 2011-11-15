@@ -7,9 +7,9 @@ binary DER-encoded messages.
 Formatting messages for ZMQ packets is done in cc.message module.
 """
 
+import logging
 import os.path
 import time
-import logging
 
 from hashlib import sha1
 from M2Crypto import SMIME, BIO, X509
@@ -313,7 +313,7 @@ class CMSTool:
 
 class CryptoContext:
 
-    log = logging.getLogger('cc.crypto.CryptoContext')
+    log = logging.getLogger('CryptoContext')
 
     def __init__(self, cf):
         if not cf:
@@ -353,16 +353,16 @@ class CryptoContext:
         part1 = js
         part2 = ''
         if self.encrypt_name and self.sign_name:
-            self.log.debug("CryptoContext.create_cmsg: encrypt: %s", msg['req'])
+            self.log.debug("encrypt: %s", msg['req'])
             part1 = 'ENC1'
             part2 = self.cms.sign_and_encrypt(js, self.sign_name, self.encrypt_name)
         elif self.encrypt_name:
-            raise Exception('encrypt_name without sign_name?')
+            raise Exception('encrypt_name without sign_name ?')
         elif self.sign_name:
-            self.log.debug("CryptoContext.create_cmsg: sign: %s", msg['req'])
+            self.log.debug("sign: %s", msg['req'])
             part2 = self.cms.sign(js, self.sign_name)
         else:
-            self.log.debug("CryptoContext.create_cmsg: no crypto: %s", msg['req'])
+            self.log.debug("no crypto: %s", msg['req'])
         zmsg = ['', msg.req.encode('utf8'), part1, part2]
         if blob is not None:
             zmsg.append(blob)
@@ -381,7 +381,7 @@ class CryptoContext:
             if not self.decrypt_name or not self.ca_name:
                 self.log.error('Cannot decrypt message')
                 return (None, None)
-            self.log.debug("CryptoContext.parse_cmsg: decrypt: %s", cmsg.get_dest())
+            self.log.debug("decrypt: %s", cmsg.get_dest())
             js, sgn = self.cms.decrypt_and_verify(part2, self.decrypt_name, self.ca_name)
         elif part1 == 'ENC1':
             self.log.error('Got encrypted msg but cannot decrypt it')
@@ -390,32 +390,32 @@ class CryptoContext:
             if not part2:
                 self.log.error('Expect signed message')
                 return (None, None)
-            self.log.debug("CryptoContext.parse_cmsg: verify: %s", cmsg.get_dest())
+            self.log.debug("verify: %s", cmsg.get_dest())
             js, sgn = self.cms.verify(part1, part2, self.ca_name)
         else:
-            self.log.debug("CryptoContext.parse_cmsg: no crypto: %s", cmsg.get_dest())
+            self.log.debug("no crypto: %s", cmsg.get_dest())
             js, sgn = part1, None
 
         msg = Struct.from_json(js)
         if msg.req != req:
-            self.log.error ('CryptoContext.parse_cmsg: hijacked message')
+            self.log.error ('hijacked message')
             return (None, None)
         age = time.time() - msg.time
         if age > 300 or age < -60:
-            self.log.error ('CryptoContext.parse_cmsg: too big time diff: %f', age)
+            self.log.error ('too big time diff: %f', age)
             return (None, None)
 
         if blob is not None:
             if getattr(msg, 'blob_hash', None):
                 h = sha1(blob).hexdigest()
                 if h != msg.blob_hash:
-                    self.log.error ('CryptoContext.parse_cmsg: blob hash does not match: %s <> %s', h, msg.blob_hash)
+                    self.log.error ('blob hash does not match: %s <> %s', h, msg.blob_hash)
                     return (None, None)
             else:
-                self.log.error ('CryptoContext.parse_cmsg: blob hash missing')
+                self.log.error ('blob hash missing')
                 return (None, None)
         elif msg.get('blob_hash', None):
-            self.log.error ('CryptoContext.parse_cmsg: blob hash exists without blob')
+            self.log.error ('blob hash exists without blob')
             return (None, None)
         return msg, sgn
 

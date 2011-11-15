@@ -8,11 +8,13 @@ client <-> ccserver|handler <-> handlerproc
 """
 
 
-import sys, errno, os.path
-import zmq, zmq.eventloop
+import errno
 import logging
-import skytools
+import os.path
+import sys
 
+import skytools
+import zmq, zmq.eventloop
 from zmq.eventloop.ioloop import PeriodicCallback
 
 from cc.message import CCMessage
@@ -20,11 +22,16 @@ from cc.stream import CCStream
 from cc.handler import cc_handler_lookup
 from cc.crypto import CryptoContext
 
-LOGFMT = '%(asctime)s %(process)s %(levelname)s %(message)s'
-V_LOGFMT = '%(levelname)s {%(name)s} %(message)s'
 
-LOGFMT = LOGFMT.replace('%', '%%')
-V_LOGFMT = V_LOGFMT.replace('%', '%%')
+LOG = skytools.dbdict(
+    fmt = '%(asctime)s %(process)s %(levelname)s %(name)s.%(funcName)s: %(message)s',
+    datefmt = '',
+    fmt_v = '%(asctime)s,%(msecs)03d %(levelname)s %(name)s.%(funcName)s: %(message)s',
+    datefmt_v = '%H:%M:%S',
+)
+for k in LOG:
+    LOG[k] = LOG[k].replace('%', '%%')
+
 
 class CCServer(skytools.BaseScript):
     """Listens on single ZMQ sockets, dispatches messages to handlers.
@@ -47,13 +54,17 @@ class CCServer(skytools.BaseScript):
         handler = cc.handler.locallogger
     """
 
-    log = logging.getLogger('cc.server.CCServer')
+    log = logging.getLogger('CCServer')
 
     cf_defaults = {
-        'logfmt_console': LOGFMT,
-        'logfmt_file': LOGFMT,
-        'logfmt_console_verbose': V_LOGFMT,
-        'logfmt_file_verbose': V_LOGFMT,
+        'logfmt_console': LOG.fmt,
+        'logfmt_file': LOG.fmt,
+        'logfmt_console_verbose': LOG.fmt_v,
+        'logfmt_file_verbose': LOG.fmt_v,
+        'logdatefmt_console': LOG.datefmt,
+        'logdatefmt_file': LOG.datefmt,
+        'logdatefmt_console_verbose': LOG.datefmt_v,
+        'logdatefmt_file_verbose': LOG.datefmt_v,
     }
 
     def print_ini(self):
@@ -119,14 +130,14 @@ class CCServer(skytools.BaseScript):
             r = ()
         else:
             r = tuple(rname.split('.'))
-        self.log.debug('New route for handler: %s -> %s', repr(r), handler.hname)
+        self.log.debug('New route for handler: %r -> %s', r, handler.hname)
         rhandlers = self.routes.setdefault(r, [])
         rhandlers.append(handler)
 
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
-        #self.log.debug('Got msg: %r', zmsg)
+        #self.log.debug('got msg: %r', zmsg)
         try:
             cmsg = CCMessage(zmsg)
         except:
@@ -153,10 +164,10 @@ class CCServer(skytools.BaseScript):
             self.stat_increase('bytes', cmsg.get_size())
 
         except Exception:
-            self.log.exception('crash, dropping msg: %s', cmsg.get_dest())
+            self.log.exception('crashed, dropping msg: %s', cmsg.get_dest())
 
-    def heartbeat (self):
-        self.log.info ("CCServer.heartbeat")
+    def heartbeat(self):
+        self.log.info('.')
 
     def work(self):
         """Default work loop simply runs ioloop."""
@@ -176,8 +187,10 @@ class CCServer(skytools.BaseScript):
         self.ioloop.stop()
 
         # FIXME: this should be done outside signal handler
+        self.log.info("Stopping CC handlers")
         for h in self.handlers.values():
             h.stop()
+
 
 def main():
     script = CCServer('ccserver', sys.argv[1:])

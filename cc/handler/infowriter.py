@@ -1,5 +1,5 @@
-import os, os.path
 import logging
+import os, os.path
 
 import cc.util
 
@@ -23,7 +23,7 @@ class InfoWriter(CCHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('cc.handler.infowriter')
+    log = logging.getLogger('h:InfoWriter')
 
     def __init__(self, hname, hcf, ccscript):
         super(InfoWriter, self).__init__(hname, hcf, ccscript)
@@ -71,10 +71,10 @@ class InfoWriter(CCHandler):
         try:
             st = os.stat(dstfn)
             if st.st_mtime == mtime:
-                self.log.info('InfoWriter.handle_msg: %s mtime matches, skipping', dstfn)
+                self.log.info('%s mtime matches, skipping', dstfn)
                 return
             elif st.st_mtime > mtime:
-                self.log.info('InfoWriter.handle_msg: %s mtime newer, skipping', dstfn)
+                self.log.info('%s mtime newer, skipping', dstfn)
                 return
         except OSError:
             pass
@@ -86,18 +86,18 @@ class InfoWriter(CCHandler):
         if self.write_compressed in [None, '', 'no', 'keep']:
             if self.write_compressed != 'keep':
                 body = cc.util.decompress (raw, data['comp'])
-                self.log.debug ("InfoWriter.handle_msg: decompressed from %i to %i", len(raw), len(body))
+                self.log.debug ("decompressed from %i to %i", len(raw), len(body))
             else:
                 body = raw
         elif self.write_compressed == 'yes':
             if (data['comp'] != self.compression):
                 deco = cc.util.decompress (raw, data['comp'])
                 body = cc.util.compress (deco, self.compression, {'level': self.compression_level})
-                self.log.debug ("InfoWriter.handle_msg: compressed from %i to %i", len(raw), len(body))
+                self.log.debug ("compressed from %i to %i", len(raw), len(body))
             else:
                 body = raw
 
         # write file, apply original mtime
-        self.log.debug('InfoWriter.handle_msg: writing data to %s', dstfn)
+        self.log.debug('writing data to %s', dstfn)
         cc.util.write_atomic (dstfn, body, bakext = self.bakext)
         os.utime(dstfn, (mtime, mtime))

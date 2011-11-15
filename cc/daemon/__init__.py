@@ -1,4 +1,5 @@
 
+import logging
 from cc.job import CCJob
 
 #
@@ -6,5 +7,5 @@ from cc.job import CCJob
 #
 
 class CCDaemon(CCJob):
-    pass
+    log = logging.getLogger('d:CCDaemon')
 

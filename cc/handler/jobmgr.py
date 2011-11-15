@@ -1,9 +1,9 @@
 
+import logging
 import os
 import signal
 import subprocess
 import time
-import logging
 
 from zmq.eventloop.ioloop import PeriodicCallback
 
@@ -26,7 +26,8 @@ CC_HANDLER = 'JobMgr'
 TIMER_TICK = 2
 
 class JobState:
-    log = logging.getLogger('cc.handler.jobmgr.JobState')
+    log = logging.getLogger('h:JobState')
+
     def __init__(self, jname, jcf, cc_url, ioloop, pidfiledir, xtx):
         self.jname = jname
         self.jcf = jcf
@@ -69,12 +70,12 @@ class JobState:
             # daemonization successful?
             live = skytools.signal_pidfile(self.pidfile, 0)
             if live:
-                self.log.debug ('JobState.handle_timer: %s is alive', self.jname)
+                self.log.debug ('%s is alive', self.jname)
                 if self.start_count > 1 and time.time() > self.start_time + self.watchdog_reset:
-                    self.log.debug ('JobState.handle_timer: resetting watchdog')
+                    self.log.debug ('resetting watchdog')
                     self.start_count = 1
             else:
-                self.log.warning ('JobState.handle_timer: %s is dead', self.jname)
+                self.log.warning ('%s is dead', self.jname)
                 if self.dead_since is None:
                     self.dead_since = time.time()
                 if time.time() >= self.dead_since + self._watchdog_wait():
@@ -95,7 +96,7 @@ class JobState:
         else:
             raise skytools.UsageError('JobState.start: dunno how to launch class')
 
-        self.log.info('JobState.start: Launching %s: %s', self.jname, " ".join(cmd))
+        self.log.info('Launching %s: %s', self.jname, " ".join(cmd))
         self.proc = subprocess.Popen(cmd, close_fds = True,
                                 stdin = open(os.devnull, 'rb'),
                                 stdout = subprocess.PIPE,
@@ -117,14 +118,16 @@ class JobState:
 
     def stop(self):
         try:
-            self.log.info('JobState.stop: Killing %s', self.jname)
+            self.log.info('Killing %s', self.jname)
             skytools.signal_pidfile(self.pidfile, signal.SIGINT)
         except:
-            self.log.exception('JobState.stop: signal_pidfile failed')
+            self.log.exception('signal_pidfile failed: %s', self.pidfile)
 
 
 class JobMgr(CCHandler):
     """Provide config to local daemons / tasks."""
+
+    log = logging.getLogger('h:JobMgr')
 
     CC_ROLES = ['local']
 
@@ -149,7 +152,7 @@ class JobMgr(CCHandler):
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC"""
 
-        self.log.info('JobMgr req: %s', cmsg)
+        self.log.debug('JobMgr req: %s', cmsg)
         data = cmsg.get_payload(self.xtx)
         if not data:
             return
@@ -176,8 +179,9 @@ class JobMgr(CCHandler):
         crep = self.xtx.create_cmsg(msg)
         crep.take_route(cmsg)
         self.cclocal.send_cmsg(crep)
-        self.log.info('JobMgr answer: %s', crep)
+        self.log.debug('JobMgr answer: %s', crep)
 
     def stop(self):
+        self.log.info('Stopping CC daemons')
         for j in self.jobs.values():
             j.stop()

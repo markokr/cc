@@ -11,13 +11,12 @@ import zmq
 import skytools
 
 from cc import json
+from cc.crypto import CryptoContext
 from cc.message import CCMessage
-
 from cc.reqs import BaseMessage, JobConfigRequestMessage, LogMessage
 
-from cc.crypto import CryptoContext
-
 __all__ = ['CCJob', 'CCDaemon', 'CCTask']
+
 
 class CallbackLogger(logging.Handler):
     """Call a function on log event."""
@@ -28,12 +27,14 @@ class CallbackLogger(logging.Handler):
     def emit(self, rec):
         self.log_cb(rec)
 
+
 class NoLog:
     def debug(self, *args): pass
     def info(self, *args): pass
     def warning(self, *args): pass
     def error(self, *args): pass
     def critical(self, *args): pass
+
 
 class CCJob(skytools.DBScript):
     zctx = None
@@ -148,15 +149,4 @@ class CCJob(skytools.DBScript):
         return p
 
     def stat_inc(self, key, increase = 1):
-        """Increases a stat value."""
-        if key in self.stat_dict:
-            self.stat_dict[key] += increase
-        else:
-            self.stat_dict[key] = increase
-
-    def set_state(self, key, increase = 1):
-        """Increases a stat value."""
-        if key in self.stat_dict:
-            self.stat_dict[key] += increase
-        else:
-            self.stat_dict[key] = increase
+        return self.stat_increase (key, increase)

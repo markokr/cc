@@ -1,10 +1,10 @@
 """ Sample task with async feedback.
 """
 
+import logging
 import sys
 import threading
 import time
-import logging
 import skytools
 
 from cc.task import CCTask

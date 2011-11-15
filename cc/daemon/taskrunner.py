@@ -8,12 +8,12 @@
 
 """
 
+import logging
+import re
+import signal
 import subprocess
 import sys
 import time
-import signal
-import re
-import logging
 
 from cc import json
 from cc.daemon import CCDaemon
@@ -28,10 +28,11 @@ import skytools
 
 _TID_INVALID = re.compile('[^-a-zA-Z0-9_]')
 
+
 class TaskState (object):
     """ Tracks task state (with help of watchdog) """
 
-    log = logging.getLogger('cc.daemon.taskrunner.TaskState')
+    log = logging.getLogger('d:TaskState')
 
     def __init__ (self, uid, name, info, ioloop, cc, xtx):
         self.uid = uid
@@ -54,10 +55,10 @@ class TaskState (object):
 
     def stop (self):
         try:
-            self.log.debug ('Killing %s', self.name)
+            self.log.info ('Killing %s', self.name)
             skytools.signal_pidfile (self.pidfile, signal.SIGINT)
         except:
-            self.log.exception ('signal_pidfile(%s) failed', self.pidfile)
+            self.log.exception ('signal_pidfile failed: %s', self.pidfile)
 
     def watchdog (self):
         live = skytools.signal_pidfile (self.pidfile, 0)
@@ -66,7 +67,7 @@ class TaskState (object):
             if self.heartbeat:
                 self.send_reply ('running')
         else:
-            self.log.info ('%s is dead', self.name)
+            self.log.info ('%s is over', self.name)
             self.dead_since = time.time()
             self.timer.stop()
             self.timer = None
@@ -93,7 +94,7 @@ class TaskRunner(CCDaemon):
     Receive and process tasks.
     """
 
-    log = logging.getLogger('cc.daemon.taskrunner')
+    log = logging.getLogger('d:TaskRunner')
 
     def startup(self):
         super(TaskRunner, self).startup()
@@ -123,12 +124,12 @@ class TaskRunner(CCDaemon):
             cmsg = CCMessage(zmsg)
             self.launch_task(cmsg)
         except:
-            self.log.exception('TaskRunner.handle_cc_recv crashed, dropping msg')
+            self.log.exception('crashed, dropping msg')
 
     def launch_task(self, cmsg):
         """Parse and execute task."""
 
-        self.log.debug("launch_task: %s", cmsg)
+        self.log.debug("cmsg: %s", cmsg)
 
         msg = cmsg.get_payload(self.xtx)
         req = cmsg.get_dest()
@@ -150,7 +151,7 @@ class TaskRunner(CCDaemon):
                 }}
         js = json.dumps(info)
 
-        self.task_reply(tid, 'starting')
+        self.task_reply(tid, 'starting') # XXX: what for ?
 
         mod = msg['task_handler']
         cmd = ['python', '-m', mod, '--cc', self.options.cc, '--cctask', jname, '-d']
@@ -178,7 +179,6 @@ class TaskRunner(CCDaemon):
 
     def task_reply(self, tid, status, fb = {}, **kwargs):
         fb = fb or kwargs
-        self.log.debug('task_reply: %r - %r', status, fb)
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % tid,
                 task_id = tid,
@@ -196,16 +196,16 @@ class TaskRunner(CCDaemon):
     def periodic_reg(self):
         """Register taskrunner in central router."""
         msg = TaskRegisterMessage (host = self.local_id)
-        self.log.info ('TaskRunner.periodic_reg: %s', repr(msg))
+        self.log.info ('msg: %r', msg)
         self.ccpublish (msg)
 
     def do_maint (self):
         """ Drop old tasks (after grace period) """
-        self.log.debug ("TaskRunner.do_maint")
+        self.log.debug ("cleanup")
         now = time.time()
         for ts in self.tasks.itervalues():
             if now - ts.dead_since > self.grace_period:
-                self.log.info ('TaskRunner.do_maint: forgetting task %s', ts.uid)
+                self.log.info ('forgetting task %s', ts.uid)
                 del self.tasks[ts.uid]
 
 

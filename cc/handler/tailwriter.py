@@ -1,6 +1,6 @@
+import logging
 import os
 import time
-import logging
 
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
@@ -19,7 +19,7 @@ class TailWriter (CCHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('cc.handler.tailwriter')
+    log = logging.getLogger('h:TailWriter')
 
     def __init__ (self, hname, hcf, ccscript):
         super(TailWriter, self).__init__(hname, hcf, ccscript)
@@ -46,7 +46,7 @@ class TailWriter (CCHandler):
         # sanitize
         host = host.replace ('/', '_')
         if mode not in ['', 'b']:
-            self.log.warn ("TailWriter.handle_msg: unsupported fopen mode ('%s'), ignoring it", mode)
+            self.log.warn ("unsupported fopen mode ('%s'), ignoring it", mode)
             mode = 'b'
 
         # Cache open files
@@ -54,7 +54,7 @@ class TailWriter (CCHandler):
         if fi in self.files:
             fd = self.files[fi]
             if mode != fd['mode']:
-                self.log.error ("TailWriter.handle_msg: fopen mode mismatch (%s -> %s)", mode, fd['mode'])
+                self.log.error ("fopen mode mismatch (%s -> %s)", mode, fd['mode'])
                 return
         else:
             # decide destination file
@@ -67,7 +67,7 @@ class TailWriter (CCHandler):
                 dstfn = os.path.join (self.dstdir, '%s--%s' % (host, fn))
 
             fobj = open (dstfn, 'a' + mode)
-            self.log.info ('TailWriter.handle_msg: opened %s', dstfn)
+            self.log.info ('opened %s', dstfn)
 
             fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
                    'ftime': time.time() }
@@ -78,28 +78,28 @@ class TailWriter (CCHandler):
             body = data['data'].decode('base64')
 
         # append to file
-        self.log.debug ('TailWriter.handle_msg: appending data to %s', fd['path'])
+        self.log.debug ('appending data to %s', fd['path'])
         fd['obj'].write (body)
         fd['wtime'] = time.time()
 
     def do_maint (self):
         """ Close long-open files; flush inactive files. """
-        self.log.debug ("TailWriter.do_maint")
+        self.log.debug('')
         now = time.time()
         for k, fd in self.files.iteritems():
             if now - fd['wtime'] > 30: # XXX: make configurable (also maxfiles)
                 fd['obj'].close()
-                self.log.info ('TailWriter.do_maint: closed %s', fd['path'])
+                self.log.info ('closed %s', fd['path'])
                 del self.files[k]
             elif (fd['wtime'] > fd['ftime']) and (now - fd['wtime'] > 3): # XXX: make configurable ?
                 # note: think about small writes within flush period
                 fd['obj'].flush()
-                self.log.debug ('TailWriter.do_maint: flushed %s', fd['path'])
+                self.log.debug ('flushed %s', fd['path'])
                 fd['ftime'] = now
 
     def stop (self):
         """ Close all open files """
-        self.log.debug ("TailWriter.stop")
+        self.log.debug('')
         for fd in self.files.itervalues():
             fd['obj'].close()
-            self.log.info ('TailWriter.stop: closed %s', fd['path'])
+            self.log.info ('closed %s', fd['path'])

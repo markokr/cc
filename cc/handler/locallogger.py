@@ -13,7 +13,7 @@ class LocalLogger(CCHandler):
 
     CC_ROLES = ['local', 'remote']
 
-    log = logging.getLogger('cc.handler.locallogger')
+    log = logging.getLogger('h:LocalLogger')
 
     def handle_msg(self, cmsg):
         msg = cmsg.get_payload(self.xtx)
