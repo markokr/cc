@@ -101,3 +101,6 @@ class InfoWriter(CCHandler):
         self.log.debug('writing data to %s', dstfn)
         cc.util.write_atomic (dstfn, body, bakext = self.bakext)
         os.utime(dstfn, (mtime, mtime))
+
+        self.stat_inc ('written_bytes', len(body))
+        self.stat_inc ('written_files')

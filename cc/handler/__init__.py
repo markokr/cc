@@ -31,10 +31,11 @@ class CCHandler(object):
         """Store handler config."""
         self.hname = hname
         self.cf = hcf
-        self.cclocal = ccscript.local
+        self.xtx = ccscript.xtx
         self.zctx = ccscript.zctx
         self.ioloop = ccscript.ioloop
-        self.xtx = ccscript.xtx
+        self.cclocal = ccscript.local
+        self.stat_inc = ccscript.stat_increase
 
     def handle_msg(self, rmsg):
         """Process single message"""

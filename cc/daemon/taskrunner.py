@@ -167,8 +167,10 @@ class TaskRunner(CCDaemon):
         fb = {'rc': p.returncode, 'out': out.encode('base64')}
         if p.returncode == 0:
             st = 'launched'
+            self.stat_inc ('tasks_launched')
         else:
             st = 'failed'
+            self.stat_inc ('tasks_failed')
         self.task_reply(tid, st, fb)
 
         if p.returncode == 0:
@@ -207,6 +209,7 @@ class TaskRunner(CCDaemon):
             if now - ts.dead_since > self.grace_period:
                 self.log.info ('forgetting task %s', ts.uid)
                 del self.tasks[ts.uid]
+        self.send_stats()
 
 
 if __name__ == '__main__':

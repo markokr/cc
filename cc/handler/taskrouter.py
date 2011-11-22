@@ -95,6 +95,7 @@ class TaskRouter(CCHandler):
         for hr in zombies:
             self.log.info('deleting route for %s', hr.host)
             del self.route_map[hr.host]
+            self.stat_inc('dropped_routes')
 
         zombies = []
         for rr in self.reply_map.itervalues():
@@ -103,6 +104,7 @@ class TaskRouter(CCHandler):
         for rr in zombies:
             self.log.info('deleting reply route for %s', rr.uid)
             del self.reply_map[rr.uid]
+            self.stat_inc('dropped_tasks')
 
 
     def register_host (self, cmsg):
@@ -114,6 +116,8 @@ class TaskRouter(CCHandler):
         self.log.debug ('(%s, %s)', host, route)
         hr = HostRoute (host, route)
         self.route_map[hr.host] = hr
+
+        self.stat_inc ('task.register')
 
         # FIXME: proper reply?
         #zans = route + [''] + ['OK']
@@ -137,6 +141,7 @@ class TaskRouter(CCHandler):
         # send the message
         self.log.debug('sending task to %s', host)
         cmsg.send_to (self.cclocal)
+        self.stat_inc ('task.send')
 
         # remember ZMQ route for replies
         req = cmsg.get_dest()
@@ -172,6 +177,8 @@ class TaskRouter(CCHandler):
         cmsg.set_route (rr.route)       # re-route message
         cmsg.send_to (self.cclocal)
         rr.atime = time.time()          # update feedback time
+
+        self.stat_inc ('task.reply')
 
     def ccreply(self, rep, creq):
         crep = self.xtx.create_cmsg(rep)

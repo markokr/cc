@@ -30,8 +30,6 @@ class ProxyHandler(CCHandler):
 
         self.launch_workers()
 
-        self.stat_increase = ccscript.stat_increase
-
     def launch_workers(self):
         pass
 
@@ -46,8 +44,8 @@ class ProxyHandler(CCHandler):
         """Got message from remote CC, send to client."""
         try:
             self.log.debug('')
-            self.stat_increase('count')
-            self.stat_increase('bytes', zmsg_size(zmsg))
+            self.stat_inc('count')
+            self.stat_inc('bytes', zmsg_size(zmsg))
             self.cclocal.send_multipart(zmsg)
         except:
             self.log.exception('crashed, dropping msg')

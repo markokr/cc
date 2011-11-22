@@ -64,6 +64,8 @@ class InfoScript(CCDaemon):
         if p.returncode != 0:
             self.log.error("Info script '%s' run failure (errcode=%d): %s",
                            self.info_script, p.returncode, repr(res))
+            self.stat_inc('infoscript.fails')
+            self.send_stats()
             return
 
         body = cc.util.compress (res, self.compression, {'level': self.compression_level})
@@ -83,6 +85,10 @@ class InfoScript(CCDaemon):
                     comp = self.compression,
                     data = body.encode('base64'))
             self.ccpublish (msg)
+
+        self.stat_inc('infoscript.bytes', len(res))
+        self.stat_inc('infoscript.count')
+        self.send_stats()
 
     def work(self):
         self.log.info("Starting IOLoop")

@@ -82,6 +82,8 @@ class TailWriter (CCHandler):
         fd['obj'].write (body)
         fd['wtime'] = time.time()
 
+        self.stat_inc ('appended_bytes', len(body))
+
     def do_maint (self):
         """ Close long-open files; flush inactive files. """
         self.log.debug('')
