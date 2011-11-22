@@ -347,8 +347,8 @@ class CryptoContext:
                 cf_dict[n1] = v
 
     def create_cmsg(self, msg, blob=None):
-        if blob is not None:
-            msg.blob_hash = sha1(blob).hexdigest()
+        if blob is not None and self.sign_name:
+            msg.blob_hash = "SHA-1:" + sha1(blob).hexdigest()
         js = msg.dump_json()
         part1 = js
         part2 = ''
@@ -406,10 +406,18 @@ class CryptoContext:
             return (None, None)
 
         if blob is not None:
-            if getattr(msg, 'blob_hash', None):
-                h = sha1(blob).hexdigest()
-                if h != msg.blob_hash:
-                    self.log.error ('blob hash does not match: %s <> %s', h, msg.blob_hash)
+            if not self.ca_name and not part2:
+                if getattr(msg, 'blob_hash', None):
+                    self.log.debug ('blob hash ignored')
+            elif getattr(msg, 'blob_hash', None):
+                ht, hs, hv = msg.blob_hash.partition(':')
+                if ht == 'SHA-1':
+                    bh = sha1(blob).hexdigest()
+                else:
+                    self.log.error ('unsupported hash type: %s', ht)
+                    return (None, None)
+                if bh != hv:
+                    self.log.error ('blob hash does not match: %s <> %s', bh, hv)
                     return (None, None)
             else:
                 self.log.error ('blob hash missing')

@@ -12,7 +12,7 @@ class BaseMessage(Struct):
 
     time = Field(float, default = time.time)
     hostname = Field(str, default = socket.gethostname())
-    #blob_hash = Field(str, default = '')
+    blob_hash = Field(str, default = '')
 
 class ReplyMessage (BaseMessage):
     req = Field(str, "reply")
