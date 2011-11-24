@@ -82,8 +82,10 @@ class LogfileTailer (CCDaemon):
                 self.tailed_files += 1
                 self.probesleft = 2
             except IOError, e:
+                self.log.info ("%s", e)
                 time.sleep (0.2)
         else:
+            self.log.debug ("no logfile available, waiting")
             time.sleep (0.2)
 
     def tail (self):
