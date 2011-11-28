@@ -40,16 +40,21 @@ class InfoWriter(CCHandler):
             self.compression_level = self.cf.getint ('compression-level', '')
 
     def handle_msg(self, cmsg):
-        """Got message from client, send to remote CC"""
+        """ Got message from client, process it. """
 
         data = cmsg.get_payload(self.xtx)
         if not data: return
 
         mtime = data['mtime']
+        mode = data['mode']
         host = data['hostname']
         fn = os.path.basename(data['filename'])
+
         # sanitize
         host = host.replace('/', '_')
+        if mode not in ['', 'b']:
+            self.log.warn ("unsupported fopen mode ('%s'), ignoring it", mode)
+            mode = 'b'
 
         # add file ext if needed
         if self.write_compressed == 'keep':
@@ -99,7 +104,7 @@ class InfoWriter(CCHandler):
 
         # write file, apply original mtime
         self.log.debug('writing data to %s', dstfn)
-        cc.util.write_atomic (dstfn, body, bakext = self.bakext)
+        cc.util.write_atomic (dstfn, body, bakext = self.bakext, mode = mode)
         os.utime(dstfn, (mtime, mtime))
 
         self.stat_inc ('written_bytes', len(body))
