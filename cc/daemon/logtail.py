@@ -30,7 +30,9 @@ class LogfileTailer (CCDaemon):
 
         self.logdir = self.cf.getfile ('logdir')
         self.logmask = self.cf.get ('logmask')
+        self.compression = ''
         self.use_blob = self.cf.getboolean ('use-blob', False)
+
         self.reverse_sort = False
         self.buf_maxbytes = self.cf.getint ('buffer-bytes', -1)
         self.buf_maxlines = self.cf.getint ('buffer-lines', -1)
@@ -138,11 +140,13 @@ class LogfileTailer (CCDaemon):
         if self.use_blob:
             msg = LogtailMessage(
                     filename = self.logfile,
+                    comp = self.compression,
                     data = '')
             self.ccpublish (msg, buf)
         else:
             msg = LogtailMessage(
                     filename = self.logfile,
+                    comp = self.compression,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
         self.log.debug ("sent %i bytes in %f s", self.bufsize, now - time.time())

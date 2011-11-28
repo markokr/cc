@@ -4,6 +4,8 @@ import time
 
 from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
+import cc.util
+
 from cc.handler import CCHandler
 
 __all__ = ['TailWriter']
@@ -13,6 +15,13 @@ CC_HANDLER = 'TailWriter'
 #
 # logtail writer
 #
+
+BUF_MINBYTES = 64 * 1024
+
+comp_ext = {
+    'gzip': '.gz',
+    'bzip2': '.bz2',
+    }
 
 class TailWriter (CCHandler):
     """ Simply appends to files """
@@ -28,6 +37,18 @@ class TailWriter (CCHandler):
         self.host_subdirs = self.cf.getboolean ('host-subdirs', 0)
         self.maint_period = self.cf.getint ('maint-period', 3)
         self.files = {}
+
+        self.write_compressed = self.cf.get ('write-compressed', '')
+        assert self.write_compressed in [None, '', 'no', 'keep', 'yes']
+        if self.write_compressed == 'yes':
+            self.compression = self.cf.get ('compression', '')
+            if self.compression not in ('gzip', 'bzip2'):
+                self.log.error ("unsupported compression: %s", self.compression)
+            self.compression_level = self.cf.getint ('compression-level', '')
+            self.buf_maxbytes = self.cf.getint ('buffer-bytes', 1024 * 1024)
+            if self.buf_maxbytes < BUF_MINBYTES:
+                self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.buf_maxbytes, BUF_MINBYTES)
+                self.buf_maxbytes = BUF_MINBYTES
 
         self.ioloop = IOLoop.instance()
         self.timer_maint = PeriodicCallback (self.do_maint, self.maint_period * 1000, self.ioloop)
@@ -48,6 +69,13 @@ class TailWriter (CCHandler):
         if mode not in ['', 'b']:
             self.log.warn ("unsupported fopen mode ('%s'), ignoring it", mode)
             mode = 'b'
+
+        # add file ext if needed
+        if self.write_compressed == 'keep':
+            if data['comp'] not in [None, '', 'none']:
+                fn += comp_ext[data['comp']]
+        elif self.write_compressed == 'yes':
+            fn += comp_ext[self.compression]
 
         # Cache open files
         fi = (host, fn)
@@ -70,12 +98,29 @@ class TailWriter (CCHandler):
             self.log.info ('opened %s', dstfn)
 
             fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
-                   'ftime': time.time() }
+                   'buf': [], 'bufsize': 0, 'ftime': time.time() }
             self.files[fi] = fd
 
-        body = cmsg.get_part3() # blob
-        if not body:
-            body = data['data'].decode('base64')
+        raw = cmsg.get_part3() # blob
+        if not raw:
+            raw = data['data'].decode('base64')
+
+        if self.write_compressed in [None, '', 'no', 'keep']:
+            if self.write_compressed != 'keep':
+                body = cc.util.decompress (raw, data['comp'])
+                self.log.debug ("decompressed from %i to %i", len(raw), len(body))
+            else:
+                body = raw
+        elif self.write_compressed == 'yes':
+            if (data['comp'] != self.compression):
+                deco = cc.util.decompress (raw, data['comp'])
+                fd['buf'].append(deco)
+                fd['bufsize'] += len(deco)
+                if fd['bufsize'] < self.buf_maxbytes:
+                    return
+                body = self._process_buffer(fd)
+            else:
+                body = raw
 
         # append to file
         self.log.debug ('appending data to %s', fd['path'])
@@ -84,6 +129,15 @@ class TailWriter (CCHandler):
 
         self.stat_inc ('appended_bytes', len(body))
 
+    def _process_buffer (self, fd):
+        """ Compress and reset write buffer """
+        buf = ''.join(fd['buf'])
+        out = cc.util.compress (buf, self.compression, {'level': self.compression_level})
+        self.log.debug ("compressed from %i to %i", fd['bufsize'], len(out))
+        fd['buf'] = []
+        fd['bufsize'] = 0
+        return out
+
     def do_maint (self):
         """ Close long-open files; flush inactive files. """
         self.log.debug('')
@@ -91,6 +145,9 @@ class TailWriter (CCHandler):
         zombies = []
         for k, fd in self.files.iteritems():
             if now - fd['wtime'] > 30: # XXX: make configurable (also maxfiles)
+                if fd['buf']:
+                    body = self._process_buffer(fd)
+                    fd['obj'].write(body)
                 fd['obj'].close()
                 self.log.info ('closed %s', fd['path'])
                 zombies.append(k)
@@ -106,5 +163,8 @@ class TailWriter (CCHandler):
         """ Close all open files """
         self.log.debug('')
         for fd in self.files.itervalues():
+            if fd['buf']:
+                body = self._process_buffer(fd)
+                fd['obj'].write(body)
             fd['obj'].close()
             self.log.info ('closed %s', fd['path'])
