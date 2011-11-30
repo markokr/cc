@@ -140,7 +140,7 @@ class TailWriter (CCHandler):
 
     def do_maint (self):
         """ Close long-open files; flush inactive files. """
-        self.log.debug('')
+        self.log.trace ('cleanup')
         now = time.time()
         zombies = []
         for k, fd in self.files.iteritems():
@@ -161,7 +161,7 @@ class TailWriter (CCHandler):
 
     def stop (self):
         """ Close all open files """
-        self.log.debug('')
+        self.log.debug ('stopping')
         for fd in self.files.itervalues():
             if fd['buf']:
                 body = self._process_buffer(fd)

@@ -25,6 +25,8 @@ class LogfileTailer (CCDaemon):
 
     log = logging.getLogger ('d:LogfileTailer')
 
+    PROBESLEFT = 2 # number of retries after old log EOF and new log spotted
+
     def reload (self):
         super(LogfileTailer, self).reload()
 
@@ -51,7 +53,7 @@ class LogfileTailer (CCDaemon):
         self.logfile = None # full path
         self.logf = None # file object
         self.logfpos = None # tell()
-        self.probesleft = 2
+        self.probesleft = self.PROBESLEFT
         self.first = True
         self.tailed_files = 0
         self.tailed_bytes = 0
@@ -82,7 +84,7 @@ class LogfileTailer (CCDaemon):
                 self.log.info ("Tailing %s", self.logfile)
                 self.stat_inc ('tailed_files')
                 self.tailed_files += 1
-                self.probesleft = 2
+                self.probesleft = self.PROBESLEFT
             except IOError, e:
                 self.log.info ("%s", e)
                 time.sleep (0.2)
@@ -114,6 +116,8 @@ class LogfileTailer (CCDaemon):
                 if (self.buf_maxbytes is not None and self.bufsize >= self.buf_maxbytes) or \
                         (self.buf_maxlines is not None and len(self.buffer) >= self.buf_maxlines):
                     self.send_frag()
+                if self.probesleft < self.PROBESLEFT:
+                    self.log.info ("DEBUG: new data in old log (!)")
                 continue
 
             # reset EOF condition for next attempt
@@ -123,13 +127,16 @@ class LogfileTailer (CCDaemon):
                 self.send_frag()
             elif self.logfile != self.get_last_filename():
                 if self.probesleft <= 0:
+                    self.log.trace ("new log, closing old one")
                     self.send_frag()
                     self.logf.close()
                     self.logf = None
                 else:
+                    self.log.trace ("new log, still waiting for old one")
                     self.probesleft -= 1
                     time.sleep (0.1)
             else:
+                self.log.trace ("waiting")
                 time.sleep (0.1)
 
     def send_frag (self):

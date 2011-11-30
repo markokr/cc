@@ -58,7 +58,7 @@ class QueryInfo:
     def launch_cb(self, arg):
         """Run callback, re-wire timeout and query if needed."""
         keep, timeout = self.cbfunc(arg)
-        self.log.debug('keep=%r', keep)
+        self.log.trace('keep=%r', keep)
         if keep:
             self.set_timeout(timeout)
         else:

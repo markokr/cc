@@ -150,7 +150,7 @@ class JobMgr(CCHandler):
         jstate.start()
 
     def handle_msg(self, cmsg):
-        """Got message from client, send to remote CC"""
+        """ Got message from client, answer it. """
 
         self.log.debug('JobMgr req: %s', cmsg)
         data = cmsg.get_payload(self.xtx)

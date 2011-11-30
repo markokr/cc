@@ -138,7 +138,7 @@ class CCServer(skytools.BaseScript):
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
-        #self.log.debug('got msg: %r', zmsg)
+        self.log.trace('got msg: %r', zmsg)
         try:
             cmsg = CCMessage(zmsg)
         except:

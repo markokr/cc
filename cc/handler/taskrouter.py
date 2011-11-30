@@ -70,7 +70,7 @@ class TaskRouter(CCHandler):
         Dispatch task reply to requestor (client).
         """
 
-        self.log.debug('got message: %r', cmsg)
+        self.log.trace('got message: %r', cmsg)
         req = cmsg.get_dest()
         sreq = req.split('.')
 

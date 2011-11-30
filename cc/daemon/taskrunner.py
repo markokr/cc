@@ -129,7 +129,7 @@ class TaskRunner(CCDaemon):
     def launch_task(self, cmsg):
         """Parse and execute task."""
 
-        self.log.debug("cmsg: %s", cmsg)
+        self.log.trace ("cmsg: %s", cmsg)
 
         msg = cmsg.get_payload(self.xtx)
         req = cmsg.get_dest()
@@ -186,7 +186,7 @@ class TaskRunner(CCDaemon):
                 task_id = tid,
                 status = status,
                 feedback = fb)
-        self.log.info('msg: %r', rep)
+        self.log.debug ('msg: %r', rep)
         self.ccpublish (rep)
 
     def work(self):
@@ -198,7 +198,7 @@ class TaskRunner(CCDaemon):
     def periodic_reg(self):
         """Register taskrunner in central router."""
         msg = TaskRegisterMessage (host = self.local_id)
-        self.log.info ('msg: %r', msg)
+        self.log.debug ('msg: %r', msg)
         self.ccpublish (msg)
 
     def do_maint (self):

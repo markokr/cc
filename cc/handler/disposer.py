@@ -15,4 +15,5 @@ class Disposer (CCHandler):
 
     def handle_msg (self, cmsg):
         """ Got message from client -- discard it :-) """
+        self.log.trace('')
         self.stat_inc ('disposed_count')
