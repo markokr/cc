@@ -4,13 +4,13 @@
 
 for f in ~/pid/*.pid; do
   if test -f "$f"; then
-    echo "killing $f"
-    kill "`cat $f`"
+    echo "stopping $f"
+    kill -s INT "`cat $f`"
   fi
 done
 
-pkill -f cc.daemon
-pkill -f cc.server
+pkill -f -s INT cc.daemon
+pkill -f -s INT cc.server
 
 #rm -rf ./var/log ./var/run ./var/info* ./infodir/info*
 #mkdir -p var/log var/run

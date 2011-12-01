@@ -95,6 +95,12 @@ class InfoScript(CCDaemon):
         self.ioloop.start()
         return 1
 
+    def stop (self):
+        """ Called from signal handler """
+        super(InfoScript, self).stop()
+        self.log.info ("stopping")
+        self.ioloop.stop()
+
 if __name__ == '__main__':
     script = InfoScript('infoscript', sys.argv[1:])
     script.start()

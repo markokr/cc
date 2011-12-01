@@ -195,6 +195,12 @@ class TaskRunner(CCDaemon):
         self.ioloop.start()
         return 1
 
+    def stop (self):
+        """ Called from signal handler """
+        super(TaskRunner, self).stop()
+        self.log.info ("stopping")
+        self.ioloop.stop()
+
     def periodic_reg(self):
         """Register taskrunner in central router."""
         msg = TaskRegisterMessage (host = self.local_id)
