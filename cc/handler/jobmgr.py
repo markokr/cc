@@ -118,7 +118,7 @@ class JobState:
 
     def stop(self):
         try:
-            self.log.info('Killing %s', self.jname)
+            self.log.info('Signalling %s', self.jname)
             skytools.signal_pidfile(self.pidfile, signal.SIGINT)
         except:
             self.log.exception('signal_pidfile failed: %s', self.pidfile)
@@ -184,4 +184,5 @@ class JobMgr(CCHandler):
     def stop(self):
         self.log.info('Stopping CC daemons')
         for j in self.jobs.values():
+            self.log.debug("stopping %s", j.jname)
             j.stop()

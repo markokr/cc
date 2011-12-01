@@ -161,7 +161,7 @@ class TailWriter (CCHandler):
 
     def stop (self):
         """ Close all open files """
-        self.log.debug ('stopping')
+        self.log.info ('stopping')
         for fd in self.files.itervalues():
             if fd['buf']:
                 body = self._process_buffer(fd)

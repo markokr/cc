@@ -55,7 +55,7 @@ class TaskState (object):
 
     def stop (self):
         try:
-            self.log.info ('Killing %s', self.name)
+            self.log.info ('Signalling %s', self.name)
             skytools.signal_pidfile (self.pidfile, signal.SIGINT)
         except:
             self.log.exception ('signal_pidfile failed: %s', self.pidfile)

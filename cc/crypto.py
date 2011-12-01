@@ -353,16 +353,16 @@ class CryptoContext:
         part1 = js
         part2 = ''
         if self.encrypt_name and self.sign_name:
-            self.log.trace("encrypt: %s", msg['req'])
+            #self.log.trace("encrypt: %s", msg['req'])
             part1 = 'ENC1'
             part2 = self.cms.sign_and_encrypt(js, self.sign_name, self.encrypt_name)
         elif self.encrypt_name:
             raise Exception('encrypt_name without sign_name ?')
         elif self.sign_name:
-            self.log.trace("sign: %s", msg['req'])
+            #self.log.trace("sign: %s", msg['req'])
             part2 = self.cms.sign(js, self.sign_name)
         else:
-            self.log.trace("no crypto: %s", msg['req'])
+            pass#self.log.trace("no crypto: %s", msg['req'])
         zmsg = ['', msg.req.encode('utf8'), part1, part2]
         if blob is not None:
             zmsg.append(blob)
@@ -381,7 +381,7 @@ class CryptoContext:
             if not self.decrypt_name or not self.ca_name:
                 self.log.error('Cannot decrypt message')
                 return (None, None)
-            self.log.trace("decrypt: %s", cmsg.get_dest())
+            #self.log.trace("decrypt: %s", cmsg.get_dest())
             js, sgn = self.cms.decrypt_and_verify(part2, self.decrypt_name, self.ca_name)
         elif part1 == 'ENC1':
             self.log.error('Got encrypted msg but cannot decrypt it')
@@ -390,10 +390,10 @@ class CryptoContext:
             if not part2:
                 self.log.error('Expect signed message')
                 return (None, None)
-            self.log.trace("verify: %s", cmsg.get_dest())
+            #self.log.trace("verify: %s", cmsg.get_dest())
             js, sgn = self.cms.verify(part1, part2, self.ca_name)
         else:
-            self.log.trace("no crypto: %s", cmsg.get_dest())
+            #self.log.trace("no crypto: %s", cmsg.get_dest())
             js, sgn = part1, None
 
         msg = Struct.from_json(js)
