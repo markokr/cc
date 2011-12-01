@@ -135,7 +135,7 @@ class LogfileTailer (CCDaemon):
     def send_frag (self):
         if self.bufsize == 0:
             return
-        now = time.time()
+        start = time.time()
         buf = ''.join(self.buffer)
         if self.use_blob:
             msg = LogtailMessage(
@@ -149,7 +149,11 @@ class LogfileTailer (CCDaemon):
                     comp = self.compression,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
-        self.log.debug ("sent %i bytes in %f s", self.bufsize, now - time.time())
+
+        # json/base64/compress time, actual send happens async
+        self.stat_inc('duration', time.time() - start)
+        self.stat_inc('count')
+
         self.stat_inc ('tailed_bytes', self.bufsize)
         self.buffer = []
         self.bufsize = 0
