@@ -8,6 +8,7 @@ import subprocess
 import skytools
 import signal
 import glob
+import errno
 
 import cc.util
 
@@ -77,6 +78,13 @@ class CCTestCase(unittest.TestCase):
     """
 
     def setUp(self):
+
+        try:
+            os.mkdir(TMPDIR)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+
         # killall
         for fn in glob.glob(TMPDIR + '/*.pid'):
             skytools.signal_pidfile(fn, signal.SIGTERM)
