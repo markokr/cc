@@ -28,14 +28,14 @@ TIMER_TICK = 2
 class JobState:
     log = logging.getLogger('h:JobState')
 
-    def __init__(self, jname, jcf, cc_url, ioloop, pidfiledir, xtx):
+    def __init__(self, jname, jcf, cc_url, ioloop, pidfile, xtx):
         self.jname = jname
         self.jcf = jcf
         self.proc = None
         self.cc_url = cc_url
         self.timer = None
         self.ioloop = ioloop
-        self.pidfile = "%s/%s.pid" % (pidfiledir, self.jname)
+        self.pidfile = pidfile
         self.start_count = 0
         self.start_time = None
         self.dead_since = None
@@ -135,7 +135,11 @@ class JobMgr(CCHandler):
         super(JobMgr, self).__init__(hname, hcf, ccscript)
 
         self.local_url = ccscript.local_url
-        self.pidfiledir = hcf.getfile('pidfiledir', '~/pid')
+        self.cc_job_name = ccscript.job_name
+        self.pidfiledir = hcf.getfile ('pidfiledir', '')
+        if not self.pidfiledir:
+            self.pidfiledir = os.path.dirname (ccscript.pidfile)
+            self.log.debug ("defaulting pidfiledir to %s", self.pidfiledir)
 
         self.jobs = {}
         for dname in self.cf.getlist('daemons'):
@@ -145,7 +149,8 @@ class JobMgr(CCHandler):
 
     def add_job(self, jname):
         jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
-        jstate = JobState(jname, jcf, self.local_url, self.ioloop, self.pidfiledir, self.xtx)
+        pidf = "%s/%s.%s.pid" % (self.pidfiledir, self.cc_job_name, jname)
+        jstate = JobState(jname, jcf, self.local_url, self.ioloop, pidf, self.xtx)
         self.jobs[jname] = jstate
         jstate.start()
 

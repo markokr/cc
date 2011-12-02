@@ -9,6 +9,7 @@
 """
 
 import logging
+import os.path
 import re
 import signal
 import subprocess
@@ -144,7 +145,8 @@ class TaskRunner(CCDaemon):
             return
 
         jname = 'task_%s' % tid
-        jpidf = self.pidfile + '.' + jname
+        pfr, pfe = os.path.splitext (self.pidfile)
+        jpidf = pfr + '.' + jname + pfe
         info = {'task': msg,
                 'config': {
                     'pidfile': jpidf,
