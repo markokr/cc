@@ -32,10 +32,14 @@ to following body parts:
 
 0 - message type (eg. 'pub.infofile')
 1 - body (json)
-2 - signature
+2 - signature (optional, can be empty)
+3 - addition data blob (optional)
 
 The message type is contained also in json, it is separated
 out to make routing easier.
+
+In case of signed message with blob, the blob is not signed,
+but it's hash is added into message before signing.
 
 Message types
 -------------
