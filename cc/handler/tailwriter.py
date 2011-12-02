@@ -2,7 +2,7 @@ import logging
 import os
 import time
 
-from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
+from zmq.eventloop.ioloop import PeriodicCallback
 
 import cc.util
 
@@ -50,7 +50,6 @@ class TailWriter (CCHandler):
                 self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.buf_maxbytes, BUF_MINBYTES)
                 self.buf_maxbytes = BUF_MINBYTES
 
-        self.ioloop = IOLoop.instance()
         self.timer_maint = PeriodicCallback (self.do_maint, self.maint_period * 1000, self.ioloop)
         self.timer_maint.start()
 
@@ -97,8 +96,9 @@ class TailWriter (CCHandler):
             fobj = open (dstfn, 'a' + mode)
             self.log.info ('opened %s', dstfn)
 
+            now = time.time()
             fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
-                   'buf': [], 'bufsize': 0, 'ftime': time.time() }
+                   'wtime': now, 'ftime': now, 'buf': [], 'bufsize': 0 }
             self.files[fi] = fd
 
         raw = cmsg.get_part3() # blob
