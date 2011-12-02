@@ -30,7 +30,7 @@ class LogfileTailer (CCDaemon):
 
         self.logdir = self.cf.getfile ('logdir')
         self.logmask = self.cf.get ('logmask')
-        self.compression = ''
+        self.compression = self.cf.get ('compression', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
         self.reverse_sort = False
