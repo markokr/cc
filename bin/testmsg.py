@@ -28,18 +28,18 @@ now = time.time()
 typ = sys.argv[1]
 need_answer = True
 if typ == 'info':
-    msg = {'req': 'pub.infofile', 'time': now, 'mtime': 1314187603, 'hostname': 'me', 'filename': 'info.1', 'data': 'qwerty'.encode('base64'), 'comp': ''}
+    msg = {'req': 'pub.infofile', 'time': now, 'mtime': 1314187603, 'hostname': 'me', 'filename': 'info.1', 'data': 'qwerty'.encode('base64'), 'comp': '', 'mode': 'b'}
     need_answer = False
 elif typ == 'taska':
-    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'host': 'hostname', 'handler': 'cc.task.sample_async', 'task_id': 55}
+    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'task_host': 'hostname', 'task_handler': 'cc.task.sample_async', 'task_id': 55}
 elif typ == 'task':
-    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'run'}
+    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'task_host': 'hostname', 'task_handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'run'}
 elif typ == 'task1':
-    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'crash-launch'}
+    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'task_host': 'hostname', 'task_handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'crash-launch'}
 elif typ == 'task2':
-    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'host': 'hostname', 'handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'crash-run'}
+    msg = {'req': 'task.send.%s' % uuid.uuid1(), 'time': now, 'task_host': 'hostname', 'task_handler': 'cc.task.sample', 'task_id': 55, 'cmd': 'crash-run'}
 elif typ == 'log':
-    msg = {'req': 'log.info', 'time': now, 'hostname': 'host', 'job_name': 'job', 'log_level': 'INFO', 'log_msg': 'Foo'}
+    msg = {'req': 'log.info', 'time': now, 'log_time': now, 'hostname': 'host', 'job_name': 'job', 'log_level': 'INFO', 'log_msg': 'Foo'}
     need_answer = False
 elif typ == 'db':
     msg = {'req': 'confdb', 'time': now, 'host': 'hostname', 'function': 'public.test_json'}
