@@ -1,5 +1,5 @@
 
-import logging
+import skytools
 from cc.job import CCJob
 
 #
@@ -7,5 +7,4 @@ from cc.job import CCJob
 #
 
 class CCDaemon(CCJob):
-    log = logging.getLogger('d:CCDaemon')
-
+    log = skytools.getLogger('d:CCDaemon')

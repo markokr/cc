@@ -1,10 +1,10 @@
 """ Sample task with async feedback.
 """
 
-import logging
 import sys
 import threading
 import time
+
 import skytools
 
 from cc.task import CCTask
@@ -12,7 +12,7 @@ from cc.task import CCTask
 class SampleTask (CCTask):
     x_time = None
 
-    log = logging.getLogger('cc.task.sample_async')
+    log = skytools.getLogger('cc.task.sample_async')
 
     def process_task (self, task):
         self.started = time.time()

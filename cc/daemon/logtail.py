@@ -11,10 +11,11 @@ Assumes that:
 """
 
 import glob
-import logging
 import os
 import sys
 import time
+
+import skytools
 
 from cc.daemon import CCDaemon
 from cc.reqs import LogtailMessage
@@ -23,7 +24,7 @@ from cc.reqs import LogtailMessage
 class LogfileTailer (CCDaemon):
     """ Logfile tailer for rotated log files """
 
-    log = logging.getLogger ('d:LogfileTailer')
+    log = skytools.getLogger ('d:LogfileTailer')
 
     PROBESLEFT = 2 # number of retries after old log EOF and new log spotted
 
@@ -156,9 +157,11 @@ class LogfileTailer (CCDaemon):
                     comp = self.compression,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
+        elapsed = time.time() - start
+        self.log.debug ("sent %i bytes in %f s", self.bufsize, elapsed)
 
         # json/base64/compress time, actual send happens async
-        self.stat_inc('duration', time.time() - start)
+        self.stat_inc('duration', elapsed)
         self.stat_inc('count')
 
         self.stat_inc ('tailed_bytes', self.bufsize)

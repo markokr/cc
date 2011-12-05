@@ -1,11 +1,10 @@
-import logging
 import os
 import time
 
+import skytools
 from zmq.eventloop.ioloop import PeriodicCallback
 
 import cc.util
-
 from cc.handler import CCHandler
 
 __all__ = ['TailWriter']
@@ -28,7 +27,7 @@ class TailWriter (CCHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('h:TailWriter')
+    log = skytools.getLogger ('h:TailWriter')
 
     def __init__ (self, hname, hcf, ccscript):
         super(TailWriter, self).__init__(hname, hcf, ccscript)

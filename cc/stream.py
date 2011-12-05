@@ -1,12 +1,13 @@
 """Wrapper around ZMQStream
 """
 
-import logging
 import time
 
 import zmq
 from zmq.eventloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
+
+import skytools
 
 from cc.message import CCMessage
 
@@ -37,7 +38,7 @@ class CCStream(ZMQStream):
 
 class QueryInfo:
     """Store callback details for query."""
-    log = logging.getLogger('QueryInfo')
+    log = skytools.getLogger('QueryInfo')
 
     def __init__(self, qid, cmsg, cbfunc, rqs):
         self.qid = qid
@@ -83,7 +84,7 @@ class CCReqStream:
     based on that.
     """
 
-    log = logging.getLogger('CCReqStream')
+    log = skytools.getLogger('CCReqStream')
 
     def __init__(self, cc_url, xtx, ioloop=None, zctx=None):
         """Initialize stream."""

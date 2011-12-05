@@ -4,9 +4,10 @@
 """
 
 import glob
-import logging
 import os, os.path
 import sys
+
+import skytools
 
 import cc.util
 
@@ -36,7 +37,7 @@ class InfoStamp:
 
 class InfofileCollector(CCDaemon):
 
-    log = logging.getLogger('d:InfofileCollector')
+    log = skytools.getLogger('d:InfofileCollector')
 
     def reload(self):
         super(InfofileCollector, self).reload()

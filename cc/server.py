@@ -9,7 +9,6 @@ client <-> ccserver|handler <-> handlerproc
 
 
 import errno
-import logging
 import os.path
 import sys
 
@@ -54,7 +53,7 @@ class CCServer(skytools.BaseScript):
         handler = cc.handler.locallogger
     """
 
-    log = logging.getLogger('CCServer')
+    log = skytools.getLogger('CCServer')
 
     cf_defaults = {
         'logfmt_console': LOG.fmt,
@@ -186,8 +185,8 @@ class CCServer(skytools.BaseScript):
 
         # FIXME: this should be done outside signal handler
         self.log.info("Stopping CC handlers")
-        for hn, h in self.handlers.items():
-            self.log.debug("stopping %s", hn)
+        for h in self.handlers.values():
+            self.log.debug("stopping %s", h.hname)
             h.stop()
 
 

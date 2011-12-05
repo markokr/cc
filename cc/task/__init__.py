@@ -1,5 +1,4 @@
 
-import logging
 import os, os.path
 import sys
 
@@ -47,7 +46,7 @@ class CCTask(CCJob):
     task_uid = None
     task_finished = False
 
-    log = logging.getLogger('t:CCTask')
+    log = skytools.getLogger('t:CCTask')
 
     def __init__(self, service_name, args):
         info = sys.stdin.read()

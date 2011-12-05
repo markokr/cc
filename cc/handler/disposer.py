@@ -1,4 +1,4 @@
-import logging
+import skytools
 
 from cc.handler import CCHandler
 
@@ -11,7 +11,7 @@ class Disposer (CCHandler):
 
     CC_ROLES = ['local', 'remote']
 
-    log = logging.getLogger('h:Disposer')
+    log = skytools.getLogger ('h:Disposer')
 
     def handle_msg (self, cmsg):
         """ Got message from client -- discard it :-) """

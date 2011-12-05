@@ -1,5 +1,4 @@
 
-import logging
 import os
 import signal
 import subprocess
@@ -26,7 +25,7 @@ CC_HANDLER = 'JobMgr'
 TIMER_TICK = 2
 
 class JobState:
-    log = logging.getLogger('h:JobState')
+    log = skytools.getLogger('h:JobState')
 
     def __init__(self, jname, jcf, cc_url, ioloop, pidfile, xtx):
         self.jname = jname
@@ -127,7 +126,7 @@ class JobState:
 class JobMgr(CCHandler):
     """Provide config to local daemons / tasks."""
 
-    log = logging.getLogger('h:JobMgr')
+    log = skytools.getLogger('h:JobMgr')
 
     CC_ROLES = ['local']
 

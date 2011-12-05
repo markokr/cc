@@ -1,5 +1,5 @@
 
-import logging
+import skytools
 import zmq
 
 from cc.handler import CCHandler
@@ -19,7 +19,7 @@ class ProxyHandler(CCHandler):
 
     CC_ROLES = ['local', 'remote']
 
-    log = logging.getLogger('h:ProxyHandler')
+    log = skytools.getLogger('h:ProxyHandler')
 
     def __init__(self, hname, hcf, ccscript):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)

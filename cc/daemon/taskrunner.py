@@ -8,7 +8,6 @@
 
 """
 
-import logging
 import os.path
 import re
 import signal
@@ -33,7 +32,7 @@ _TID_INVALID = re.compile('[^-a-zA-Z0-9_]')
 class TaskState (object):
     """ Tracks task state (with help of watchdog) """
 
-    log = logging.getLogger('d:TaskState')
+    log = skytools.getLogger ('d:TaskState')
 
     def __init__ (self, uid, name, info, ioloop, cc, xtx):
         self.uid = uid
@@ -95,7 +94,7 @@ class TaskRunner(CCDaemon):
     Receive and process tasks.
     """
 
-    log = logging.getLogger('d:TaskRunner')
+    log = skytools.getLogger ('d:TaskRunner')
 
     def startup(self):
         super(TaskRunner, self).startup()
