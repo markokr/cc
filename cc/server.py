@@ -44,7 +44,7 @@ class CCServer(skytools.BaseScript):
 
         # zmq customization:
         #zmq_nthreads = 1
-        #zmq_hwm = 1000
+        #zmq_hwm = 50
         #zmq_linger = 500
     """
     extra_ini = """
@@ -73,15 +73,15 @@ class CCServer(skytools.BaseScript):
     }
 
     zmq_nthreads = 1
-    zmq_hwm = 1000
+    zmq_hwm = 50
     zmq_linger = 500
 
     def reload(self):
         super(CCServer, self).reload()
 
-        self.zmq_nthreads = self.cf.getint('zmq_nthreads', 1)
-        self.zmq_hwm = self.cf.getint('zmq_hwm', 1000)
-        self.zmq_linger = self.cf.getint('zmq_linger', 500)
+        self.zmq_nthreads = self.cf.getint('zmq_nthreads', self.zmq_nthreads)
+        self.zmq_hwm = self.cf.getint('zmq_hwm', self.zmq_hwm)
+        self.zmq_linger = self.cf.getint('zmq_linger', self.zmq_linger)
 
     def print_ini(self):
         super(CCServer, self).print_ini()
