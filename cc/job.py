@@ -40,6 +40,9 @@ class CCJob(skytools.DBScript):
     zctx = None
     cc = None
 
+    zmq_nthreads = 1
+    zmq_hwm = 1000
+
     def __init__(self, service_type, args):
         # no crypto for logs
         self.logxtx = CryptoContext(None)
@@ -123,12 +126,13 @@ class CCJob(skytools.DBScript):
 
     def connect_cc(self):
         if not self.zctx:
-            self.zctx = zmq.Context()
+            self.zctx = zmq.Context(self.zmq_nthreads)
         if not self.cc:
             url = self.options.cc
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.connect(url)
             self.cc.setsockopt(zmq.LINGER, 500)
+            self.cc.setsockopt(zmq.HWM, self.zmq_hwm)
         return self.cc
 
     def close_cc(self):
