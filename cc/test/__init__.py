@@ -160,7 +160,7 @@ class CCTestCase(unittest.TestCase):
     def runcmd(self, cmdline, checkerr = True):
         p = subprocess.Popen(cmdline, stderr = subprocess.STDOUT, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
         p.stdin.close()
-        cc.util.set_nonblocking(p.stdout, 1)
+        skytools.set_nonblocking(p.stdout, 1)
 
         # loop some time
         end = time.time() + 5
