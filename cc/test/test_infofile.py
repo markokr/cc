@@ -54,6 +54,7 @@ class TestInfofile(CCTestCase):
         infomask = info.*
         compression = gzip
         compression-level = 1
+        use-blob = 1
 
         [d:infoscript]
         module = cc.daemon.infoscript
@@ -61,6 +62,7 @@ class TestInfofile(CCTestCase):
         info-script = ps axuw
         info-period = 5
         compression = gzip
+        use-blob = 1
     """
 
     def setUp(self):
