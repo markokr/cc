@@ -40,6 +40,11 @@ class CCServer(skytools.BaseScript):
 
         # listening socket for this CC instance
         cc-socket = tcp://127.0.0.1:10000
+
+        # zmq customization:
+        #zmq_nthreads = 1
+        #zmq_hwm = 50
+        #zmq_linger = 500
     """
     extra_ini = """
     Extra segments::
@@ -66,6 +71,17 @@ class CCServer(skytools.BaseScript):
         'logdatefmt_file_verbose': LOG.datefmt_v,
     }
 
+    zmq_nthreads = 1
+    zmq_hwm = 50
+    zmq_linger = 500
+
+    def reload(self):
+        super(CCServer, self).reload()
+
+        self.zmq_nthreads = self.cf.getint('zmq_nthreads', self.zmq_nthreads)
+        self.zmq_hwm = self.cf.getint('zmq_hwm', self.zmq_hwm)
+        self.zmq_linger = self.cf.getint('zmq_linger', self.zmq_linger)
+
     def print_ini(self):
         super(CCServer, self).print_ini()
 
@@ -77,7 +93,7 @@ class CCServer(skytools.BaseScript):
         super(CCServer, self).startup()
 
         self.xtx = CryptoContext(self.cf)
-        self.zctx = zmq.Context()
+        self.zctx = zmq.Context(self.zmq_nthreads)
         self.ioloop = zmq.eventloop.IOLoop.instance()
 
         self.local_url = self.cf.get('cc-socket')
@@ -89,7 +105,8 @@ class CCServer(skytools.BaseScript):
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
         s.bind(self.local_url)
-        s.setsockopt(zmq.LINGER, 500)
+        s.setsockopt(zmq.LINGER, self.zmq_linger)
+        s.setsockopt(zmq.HWM, self.zmq_hwm)
         self.local = CCStream(s, self.ioloop)
         self.local.on_recv(self.handle_cc_recv)
 

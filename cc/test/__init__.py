@@ -8,6 +8,7 @@ import subprocess
 import skytools
 import signal
 import glob
+import errno
 
 import cc.util
 
@@ -77,6 +78,13 @@ class CCTestCase(unittest.TestCase):
     """
 
     def setUp(self):
+
+        try:
+            os.mkdir(TMPDIR)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+
         # killall
         for fn in glob.glob(TMPDIR + '/*.pid'):
             skytools.signal_pidfile(fn, signal.SIGTERM)
@@ -152,7 +160,7 @@ class CCTestCase(unittest.TestCase):
     def runcmd(self, cmdline, checkerr = True):
         p = subprocess.Popen(cmdline, stderr = subprocess.STDOUT, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
         p.stdin.close()
-        cc.util.set_nonblocking(p.stdout, 1)
+        skytools.set_nonblocking(p.stdout, 1)
 
         # loop some time
         end = time.time() + 5

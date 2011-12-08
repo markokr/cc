@@ -10,7 +10,6 @@ from cc.crypto import CryptoContext
 from cc.handler import CCHandler
 from cc.message import CCMessage
 from cc.reqs import ErrorMessage, JobConfigReplyMessage
-from cc.util import set_nonblocking
 
 import skytools
 
@@ -101,7 +100,7 @@ class JobState:
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.STDOUT)
 
-        set_nonblocking(self.proc.stdout, True)
+        skytools.set_nonblocking(self.proc.stdout, True)
 
         self.start_count += 1
         self.start_time = time.time()

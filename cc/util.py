@@ -2,12 +2,11 @@
 
 import bz2
 import errno
-import fcntl
 import gzip
 import os
 import StringIO
 
-__all__ = ['write_atomic', 'set_nonblocking', 'set_cloexec']
+__all__ = ['write_atomic', 'compress', 'decompress']
 
 def write_atomic (fn, data, bakext = None, mode = 'b'):
     """Write [text] file with rename."""
@@ -39,32 +38,6 @@ def write_atomic (fn, data, bakext = None, mode = 'b'):
 
     # atomically replace file
     os.rename(fn2, fn)
-
-def set_nonblocking(fd, onoff):
-    """Toggle the O_NONBLOCK flag.
-    If onoff==None then return current setting.
-    """
-    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    if onoff is None:
-        return (flags & os.O_NONBLOCK) > 0
-    if onoff:
-        flags |= os.O_NONBLOCK
-    else:
-        flags &= ~os.O_NONBLOCK
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
-
-def set_cloexec(fd, onoff):
-    """Toggle the FD_CLOEXEC flag.
-    If onoff==None then return current setting.
-    """
-    flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-    if onoff is None:
-        return (flags & fcntl.FD_CLOEXEC) > 0
-    if onoff:
-        flags |= fcntl.FD_CLOEXEC
-    else:
-        flags &= ~fcntl.FD_CLOEXEC
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
 
 
 def compress (buffer, method, options = {}):

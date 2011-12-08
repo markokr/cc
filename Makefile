@@ -15,5 +15,5 @@ lint:
 	pylint -E --rcfile conf/pylint.cfg cc
 
 test:
-	python -m cc.test
+	python -m cc.test.__main__
 

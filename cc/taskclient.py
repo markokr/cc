@@ -5,7 +5,6 @@
 
 import sys
 import uuid
-import cc.client
 import cc.task
 
 from cc.reqs import BaseMessage, TaskSendMessage
