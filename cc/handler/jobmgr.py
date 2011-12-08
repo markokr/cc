@@ -81,12 +81,13 @@ class JobState:
                     self.timer = None
                     self.start()
 
-    def start(self):
+    def start (self, args_extra = []):
         # unsure about the best way to specify target
         mod = self.jcf.get('module', '')
         script = self.jcf.get('script', '')
         cls = self.jcf.get('class', '')
         args = ['-d', '--cc', self.cc_url, '--ccdaemon', self.jname]
+        args.extend (args_extra)
         if mod:
             cmd = ['python', '-m', mod] + args
         elif script:
@@ -139,6 +140,12 @@ class JobMgr(CCHandler):
             self.pidfiledir = os.path.dirname (ccscript.pidfile)
             self.log.debug ("defaulting pidfiledir to %s", self.pidfiledir)
 
+        self.job_args_extra = []
+        if ccscript.options.quiet:
+            self.job_args_extra.append("-q")
+        if ccscript.options.verbose:
+            self.job_args_extra.extend(["-v"] * ccscript.options.verbose)
+
         self.jobs = {}
         for dname in self.cf.getlist('daemons'):
             self.add_job(dname)
@@ -150,7 +157,7 @@ class JobMgr(CCHandler):
         pidf = "%s/%s.%s.pid" % (self.pidfiledir, self.cc_job_name, jname)
         jstate = JobState(jname, jcf, self.local_url, self.ioloop, pidf, self.xtx)
         self.jobs[jname] = jstate
-        jstate.start()
+        jstate.start (self.job_args_extra)
 
     def handle_msg(self, cmsg):
         """ Got message from client, answer it. """
