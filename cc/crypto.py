@@ -313,6 +313,7 @@ class CMSTool:
 #
 
 class CryptoContext:
+    """Load crypto config, check messages based on it."""
 
     log = skytools.getLogger('CryptoContext')
 
@@ -325,6 +326,7 @@ class CryptoContext:
             self.decrypt_name = None
             self.encrypt_name = None
             self.sign_name = None
+            self.time_window = 0
             return
         self.ks_dir = cf.getfile('cms-keystore', '')
         priv_dir = os.path.join(self.ks_dir, 'private')
@@ -335,6 +337,7 @@ class CryptoContext:
         self.decrypt_name = cf.get('cms-decrypt', '')
         self.sign_name = cf.get('cms-sign', '')
         self.encrypt_name = cf.get('cms-encrypt', '')
+        self.time_window = int(cf.get('cms-time-window', '0'))
 
     def fill_config(self, cf_dict):
         pairs = (('cms-verify-ca', 'ca_name'),
@@ -401,10 +404,12 @@ class CryptoContext:
         if msg.req != req:
             self.log.error ('hijacked message')
             return (None, None)
-        age = time.time() - msg.time
-        if age > 300 or age < -60:
-            self.log.error ('too big time diff: %f', age)
-            return (None, None)
+
+        if self.time_window:
+            age = time.time() - msg.time
+            if abs(age) > self.time_window:
+                self.log.error('too big time diff: %f', age)
+                return (None, None)
 
         if blob is not None:
             if not self.ca_name and not part2:
