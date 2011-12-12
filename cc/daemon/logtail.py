@@ -70,6 +70,7 @@ class LogfileTailer (CCDaemon):
         self.tailed_bytes = 0
         self.buffer = []
         self.bufsize = 0
+        self.bufseek = None
 
     def get_all_filenames (self):
         """ Return sorted list of all log file names """
@@ -87,10 +88,12 @@ class LogfileTailer (CCDaemon):
     def try_open_file (self, name):
         """ Try open log file; sleep a bit if unavailable. """
         if name:
+            assert self.buffer == [] and self.bufsize == 0
             try:
                 self.logf = open (name, 'rb')
                 self.logfile = name
                 self.logfpos = 0
+                self.bufseek = 0
                 self.send_stats() # better do it async me think (?)
                 self.log.info ("Tailing %s", self.logfile)
                 self.stat_inc ('tailed_files')
@@ -115,6 +118,8 @@ class LogfileTailer (CCDaemon):
             if self.first:
                 # seek to end of first file
                 self.logf.seek (0, os.SEEK_END)
+                self.bufseek = self.logfpos = self.logf.tell()
+                self.log.info ("started at file position %i", self.logfpos)
                 self.first = False
 
             line = self.logf.readline()
@@ -164,12 +169,14 @@ class LogfileTailer (CCDaemon):
             msg = LogtailMessage(
                     filename = self.logfile,
                     comp = self.compression,
+                    fpos = self.bufseek,
                     data = '')
             self.ccpublish (msg, buf)
         else:
             msg = LogtailMessage(
                     filename = self.logfile,
                     comp = self.compression,
+                    fpos = self.bufseek,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
         elapsed = time.time() - start
@@ -177,8 +184,10 @@ class LogfileTailer (CCDaemon):
         self.stat_inc ('duration', elapsed) # json/base64/compress time, actual send happens async
         self.stat_inc ('count')
         self.stat_inc ('tailed_bytes', self.bufsize)
+        self.bufseek += self.bufsize
         self.buffer = []
         self.bufsize = 0
+        assert self.bufseek == self.logfpos
 
     def work (self):
         self.connect_cc()

@@ -121,6 +121,11 @@ class TailWriter (CCHandler):
             else:
                 body = raw
 
+        if hasattr (data, 'fpos'):
+            fpos = fd['obj'].tell()
+            if data['fpos'] != fpos:
+                self.log.warn ("sync lost: %i <> %i", data['fpos'], fpos)
+
         # append to file
         self.log.debug ('appending data to %s', fd['path'])
         fd['obj'].write (body)

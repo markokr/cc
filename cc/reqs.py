@@ -46,6 +46,7 @@ class LogtailMessage (BaseMessage):
     data = Field(str)                   # file contents (data fork)
     comp = Field(str)                   # compression method used
     mode = Field(str, 'b')              # file mode to use for fopen
+    fpos = Field(int)
 
 class JobConfigRequestMessage(BaseMessage):
     req = Field(str, "job.config")
