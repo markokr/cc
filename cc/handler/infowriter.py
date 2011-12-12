@@ -88,12 +88,14 @@ class InfoWriter(CCHandler):
         if not raw:
             raw = data['data'].decode('base64')
 
-        if self.write_compressed in [None, '', 'no', 'keep']:
-            if self.write_compressed != 'keep':
+        if self.write_compressed in [None, '', 'no']:
+            if data['comp'] not in (None, '', 'none'):
                 body = cc.util.decompress (raw, data['comp'])
                 self.log.debug ("decompressed from %i to %i", len(raw), len(body))
             else:
                 body = raw
+        elif self.write_compressed == 'keep':
+            body = raw
         elif self.write_compressed == 'yes':
             if (data['comp'] != self.compression):
                 deco = cc.util.decompress (raw, data['comp'])
@@ -103,7 +105,7 @@ class InfoWriter(CCHandler):
                 body = raw
 
         # write file, apply original mtime
-        self.log.debug('writing data to %s', dstfn)
+        self.log.debug ('writing %i bytes to %s', len(body), dstfn)
         cc.util.write_atomic (dstfn, body, bakext = self.bakext, mode = mode)
         os.utime(dstfn, (mtime, mtime))
 

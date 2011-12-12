@@ -104,12 +104,14 @@ class TailWriter (CCHandler):
         if not raw:
             raw = data['data'].decode('base64')
 
-        if self.write_compressed in [None, '', 'no', 'keep']:
-            if self.write_compressed != 'keep':
+        if self.write_compressed in [None, '', 'no']:
+            if data['comp'] not in (None, '', 'none'):
                 body = cc.util.decompress (raw, data['comp'])
                 self.log.debug ("decompressed from %i to %i", len(raw), len(body))
             else:
                 body = raw
+        elif self.write_compressed == 'keep':
+            body = raw
         elif self.write_compressed == 'yes':
             if (data['comp'] != self.compression):
                 deco = cc.util.decompress (raw, data['comp'])
@@ -127,7 +129,7 @@ class TailWriter (CCHandler):
                 self.log.warn ("sync lost: %i <> %i", data['fpos'], fpos)
 
         # append to file
-        self.log.debug ('appending data to %s', fd['path'])
+        self.log.debug ('appending %i bytes to %s', len(body), fd['path'])
         fd['obj'].write (body)
         fd['wtime'] = time.time()
 
