@@ -1,7 +1,8 @@
 """Local logger."""
 
-import logging
 import time
+
+import skytools
 
 from cc.handler import CCHandler
 
@@ -14,7 +15,7 @@ class LocalLogger(CCHandler):
 
     CC_ROLES = ['local', 'remote']
 
-    log = logging.getLogger('h:LocalLogger')
+    log = skytools.getLogger('h:LocalLogger')
 
     def handle_msg(self, cmsg):
         msg = cmsg.get_payload(self.xtx)

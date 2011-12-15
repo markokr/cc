@@ -1,5 +1,4 @@
 
-import logging
 import os
 import signal
 import subprocess
@@ -25,16 +24,16 @@ CC_HANDLER = 'JobMgr'
 TIMER_TICK = 2
 
 class JobState:
-    log = logging.getLogger('h:JobState')
+    log = skytools.getLogger('h:JobState')
 
-    def __init__(self, jname, jcf, cc_url, ioloop, pidfiledir, xtx):
+    def __init__(self, jname, jcf, cc_url, ioloop, pidfile, xtx):
         self.jname = jname
         self.jcf = jcf
         self.proc = None
         self.cc_url = cc_url
         self.timer = None
         self.ioloop = ioloop
-        self.pidfile = "%s/%s.pid" % (pidfiledir, self.jname)
+        self.pidfile = pidfile
         self.start_count = 0
         self.start_time = None
         self.dead_since = None
@@ -82,12 +81,13 @@ class JobState:
                     self.timer = None
                     self.start()
 
-    def start(self):
+    def start (self, args_extra = []):
         # unsure about the best way to specify target
         mod = self.jcf.get('module', '')
         script = self.jcf.get('script', '')
         cls = self.jcf.get('class', '')
         args = ['-d', '--cc', self.cc_url, '--ccdaemon', self.jname]
+        args.extend (args_extra)
         if mod:
             cmd = ['python', '-m', mod] + args
         elif script:
@@ -117,7 +117,7 @@ class JobState:
 
     def stop(self):
         try:
-            self.log.info('Killing %s', self.jname)
+            self.log.info('Signalling %s', self.jname)
             skytools.signal_pidfile(self.pidfile, signal.SIGINT)
         except:
             self.log.exception('signal_pidfile failed: %s', self.pidfile)
@@ -126,7 +126,7 @@ class JobState:
 class JobMgr(CCHandler):
     """Provide config to local daemons / tasks."""
 
-    log = logging.getLogger('h:JobMgr')
+    log = skytools.getLogger('h:JobMgr')
 
     CC_ROLES = ['local']
 
@@ -134,7 +134,17 @@ class JobMgr(CCHandler):
         super(JobMgr, self).__init__(hname, hcf, ccscript)
 
         self.local_url = ccscript.local_url
-        self.pidfiledir = hcf.getfile('pidfiledir', '~/pid')
+        self.cc_job_name = ccscript.job_name
+        self.pidfiledir = hcf.getfile ('pidfiledir', '')
+        if not self.pidfiledir:
+            self.pidfiledir = os.path.dirname (ccscript.pidfile)
+            self.log.debug ("defaulting pidfiledir to %s", self.pidfiledir)
+
+        self.job_args_extra = []
+        if ccscript.options.quiet:
+            self.job_args_extra.append("-q")
+        if ccscript.options.verbose:
+            self.job_args_extra.extend(["-v"] * ccscript.options.verbose)
 
         self.jobs = {}
         for dname in self.cf.getlist('daemons'):
@@ -144,12 +154,13 @@ class JobMgr(CCHandler):
 
     def add_job(self, jname):
         jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
-        jstate = JobState(jname, jcf, self.local_url, self.ioloop, self.pidfiledir, self.xtx)
+        pidf = "%s/%s.%s.pid" % (self.pidfiledir, self.cc_job_name, jname)
+        jstate = JobState(jname, jcf, self.local_url, self.ioloop, pidf, self.xtx)
         self.jobs[jname] = jstate
-        jstate.start()
+        jstate.start (self.job_args_extra)
 
     def handle_msg(self, cmsg):
-        """Got message from client, send to remote CC"""
+        """ Got message from client, answer it. """
 
         self.log.debug('JobMgr req: %s', cmsg)
         data = cmsg.get_payload(self.xtx)
@@ -183,4 +194,5 @@ class JobMgr(CCHandler):
     def stop(self):
         self.log.info('Stopping CC daemons')
         for j in self.jobs.values():
+            self.log.debug("stopping %s", j.jname)
             j.stop()

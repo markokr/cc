@@ -1,11 +1,10 @@
-import logging
 import os
 import time
 
-from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
+import skytools
+from zmq.eventloop.ioloop import PeriodicCallback
 
 import cc.util
-
 from cc.handler import CCHandler
 
 __all__ = ['TailWriter']
@@ -28,7 +27,7 @@ class TailWriter (CCHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('h:TailWriter')
+    log = skytools.getLogger ('h:TailWriter')
 
     def __init__ (self, hname, hcf, ccscript):
         super(TailWriter, self).__init__(hname, hcf, ccscript)
@@ -50,7 +49,6 @@ class TailWriter (CCHandler):
                 self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.buf_maxbytes, BUF_MINBYTES)
                 self.buf_maxbytes = BUF_MINBYTES
 
-        self.ioloop = IOLoop.instance()
         self.timer_maint = PeriodicCallback (self.do_maint, self.maint_period * 1000, self.ioloop)
         self.timer_maint.start()
 
@@ -97,8 +95,9 @@ class TailWriter (CCHandler):
             fobj = open (dstfn, 'a' + mode)
             self.log.info ('opened %s', dstfn)
 
+            now = time.time()
             fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
-                   'buf': [], 'bufsize': 0, 'ftime': time.time() }
+                   'wtime': now, 'ftime': now, 'buf': [], 'bufsize': 0 }
             self.files[fi] = fd
 
         raw = cmsg.get_part3() # blob
@@ -140,7 +139,7 @@ class TailWriter (CCHandler):
 
     def do_maint (self):
         """ Close long-open files; flush inactive files. """
-        self.log.debug('')
+        self.log.trace ('cleanup')
         now = time.time()
         zombies = []
         for k, fd in self.files.iteritems():
@@ -161,7 +160,7 @@ class TailWriter (CCHandler):
 
     def stop (self):
         """ Close all open files """
-        self.log.debug('')
+        self.log.info ('stopping')
         for fd in self.files.itervalues():
             if fd['buf']:
                 body = self._process_buffer(fd)

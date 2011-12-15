@@ -1,9 +1,9 @@
 """Client side task handling.
 """
 
-import logging
 import uuid
 
+import skytools
 from zmq.eventloop import IOLoop
 
 from cc.reqs import TaskSendMessage
@@ -12,7 +12,7 @@ from cc.stream import CCReqStream
 class TaskInfo:
     """Per-task state, replies."""
 
-    log = logging.getLogger('TaskInfo')
+    log = skytools.getLogger('TaskInfo')
 
     def __init__(self, task, task_cbfunc, ccrq):
         self.task = task
@@ -67,7 +67,7 @@ class TaskInfo:
 class TaskManager:
     """Manages task on single CCReqStream connection."""
 
-    log = logging.getLogger('TaskManager')
+    log = skytools.getLogger('TaskManager')
 
     def __init__(self, ccrq):
         self.ccrq = ccrq

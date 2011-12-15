@@ -5,7 +5,6 @@ where workers connect to and receive messages.
 
 """
 
-import logging
 import threading
 import time
 
@@ -32,7 +31,7 @@ CC_HANDLER = 'DBHandler'
 class DBWorker(threading.Thread):
     """Worker thread, can do blocking calls."""
 
-    log = logging.getLogger('h:DBWorker')
+    log = skytools.getLogger('h:DBWorker')
 
     def __init__(self, name, zctx, worker_url, connstr, func_list, xtx):
         super(DBWorker, self).__init__(name=name)
@@ -117,7 +116,7 @@ class DBHandler(ProxyHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('h:DBHandler')
+    log = skytools.getLogger('h:DBHandler')
 
     def make_socket(self):
         baseurl = 'tcp://127.0.0.1'

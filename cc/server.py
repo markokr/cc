@@ -9,7 +9,6 @@ client <-> ccserver|handler <-> handlerproc
 
 
 import errno
-import logging
 import os.path
 import sys
 
@@ -59,7 +58,7 @@ class CCServer(skytools.BaseScript):
         handler = cc.handler.locallogger
     """
 
-    log = logging.getLogger('CCServer')
+    log = skytools.getLogger('CCServer')
 
     cf_defaults = {
         'logfmt_console': LOG.fmt,
@@ -155,7 +154,7 @@ class CCServer(skytools.BaseScript):
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
-        #self.log.debug('got msg: %r', zmsg)
+        self.log.trace('got msg: %r', zmsg)
         try:
             cmsg = CCMessage(zmsg)
         except:
@@ -171,7 +170,7 @@ class CCServer(skytools.BaseScript):
             for n in range(0, 1 + len(route)):
                 p = route[ : n]
                 for h in self.routes.get(p, []):
-                    self.log.debug('calling handler %s', h.hname)
+                    self.log.trace('calling handler %s', h.hname)
                     h.handle_msg(cmsg)
                     cnt += 1
             if cnt == 0:
@@ -204,6 +203,7 @@ class CCServer(skytools.BaseScript):
         # FIXME: this should be done outside signal handler
         self.log.info("Stopping CC handlers")
         for h in self.handlers.values():
+            self.log.debug("stopping %s", h.hname)
             h.stop()
 
 

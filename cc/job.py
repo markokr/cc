@@ -6,9 +6,8 @@ CC daemon / task
 import logging
 import socket
 
-import zmq
-
 import skytools
+import zmq
 
 from cc import json
 from cc.crypto import CryptoContext
@@ -52,7 +51,7 @@ class CCJob(skytools.DBScript):
 
         self.hostname = socket.gethostname()
 
-        root = logging.getLogger()
+        root = skytools.getLogger()
         root.addHandler(CallbackLogger(self.emit_log))
 
         self.xtx = CryptoContext(self.cf)

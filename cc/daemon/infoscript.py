@@ -6,15 +6,15 @@
 import logging
 import sys
 import time
+from subprocess import Popen, PIPE, STDOUT
+
+import skytools
+from zmq.eventloop.ioloop import PeriodicCallback, IOLoop
 
 import cc.util
-
-from zmq.eventloop.ioloop import PeriodicCallback, IOLoop
-from subprocess import Popen, PIPE, STDOUT
 from cc.daemon import CCDaemon
 from cc.reqs import InfofileMessage
 
-import skytools
 
 class StrictPeriod(PeriodicCallback):
     """Calculate period before launching callback"""
@@ -35,7 +35,7 @@ class InfoScript(CCDaemon):
     """Run script, send output.
     """
 
-    log = logging.getLogger('d:InfoScript')
+    log = skytools.getLogger('d:InfoScript')
 
     def startup(self):
         super(InfoScript, self).startup()
@@ -94,6 +94,13 @@ class InfoScript(CCDaemon):
         self.log.info("Starting IOLoop")
         self.ioloop.start()
         return 1
+
+    def stop (self):
+        """ Called from signal handler """
+        super(InfoScript, self).stop()
+        self.log.info ("stopping")
+        self.ioloop.stop()
+
 
 if __name__ == '__main__':
     script = InfoScript('infoscript', sys.argv[1:])

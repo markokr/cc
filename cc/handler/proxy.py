@@ -1,5 +1,5 @@
 
-import logging
+import skytools
 import zmq
 
 from cc.handler import CCHandler
@@ -19,7 +19,7 @@ class ProxyHandler(CCHandler):
 
     CC_ROLES = ['local', 'remote']
 
-    log = logging.getLogger('h:ProxyHandler')
+    log = skytools.getLogger('h:ProxyHandler')
 
     def __init__(self, hname, hcf, ccscript):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)
@@ -43,7 +43,7 @@ class ProxyHandler(CCHandler):
     def on_recv(self, zmsg):
         """Got message from remote CC, send to client."""
         try:
-            self.log.debug('')
+            self.log.trace('')
             self.stat_inc('count')
             self.stat_inc('bytes', zmsg_size(zmsg))
             self.cclocal.send_multipart(zmsg)
@@ -52,5 +52,5 @@ class ProxyHandler(CCHandler):
 
     def handle_msg(self, cmsg):
         """Got message from client, send to remote CC."""
-        self.log.debug('')
+        self.log.trace('')
         self.stream.send_cmsg(cmsg)

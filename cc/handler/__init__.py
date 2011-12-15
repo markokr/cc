@@ -13,8 +13,9 @@ It would be preferable to reduce everything to write to socket.
 
 """
 
-import logging
 import sys
+
+import skytools
 
 __all__ = ['CCHandler', 'cc_handler_lookup']
 
@@ -25,7 +26,7 @@ __all__ = ['CCHandler', 'cc_handler_lookup']
 class CCHandler(object):
     """Basic handler interface."""
 
-    log = logging.getLogger('h:CCHandler')
+    log = skytools.getLogger('h:CCHandler')
 
     def __init__(self, hname, hcf, ccscript):
         """Store handler config."""

@@ -4,16 +4,16 @@ Params:
     cmd - crash-launch / crash-run / other
 """
 
-import logging
 import sys
 import time
+
 import skytools
 
 from cc.task import CCTask
 
 class SampleTask(CCTask):
 
-    log = logging.getLogger('cc.task.sample')
+    log = skytools.getLogger('cc.task.sample')
 
     def fetch_config(self):
 

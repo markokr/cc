@@ -1,8 +1,8 @@
-import logging
 import os, os.path
 
-import cc.util
+import skytools
 
+import cc.util
 from cc.handler import CCHandler
 
 __all__ = ['InfoWriter']
@@ -23,7 +23,7 @@ class InfoWriter(CCHandler):
 
     CC_ROLES = ['remote']
 
-    log = logging.getLogger('h:InfoWriter')
+    log = skytools.getLogger('h:InfoWriter')
 
     def __init__(self, hname, hcf, ccscript):
         super(InfoWriter, self).__init__(hname, hcf, ccscript)

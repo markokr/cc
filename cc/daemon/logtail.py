@@ -11,11 +11,13 @@ Assumes that:
 """
 
 import glob
-import logging
 import os
 import sys
 import time
 
+import skytools
+
+import cc.util
 from cc.daemon import CCDaemon
 from cc.reqs import LogtailMessage
 
@@ -23,7 +25,10 @@ from cc.reqs import LogtailMessage
 class LogfileTailer (CCDaemon):
     """ Logfile tailer for rotated log files """
 
-    log = logging.getLogger ('d:LogfileTailer')
+    log = skytools.getLogger ('d:LogfileTailer')
+
+    BUF_MINBYTES = 64 * 1024
+    PROBESLEFT = 2 # number of retries after old log EOF and new log spotted
 
     def reload (self):
         super(LogfileTailer, self).reload()
@@ -31,6 +36,9 @@ class LogfileTailer (CCDaemon):
         self.logdir = self.cf.getfile ('logdir')
         self.logmask = self.cf.get ('logmask')
         self.compression = self.cf.get ('compression', '')
+        if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
+            self.log.error ("unknown compression: %s", self.compression)
+        self.compression_level = self.cf.getint ('compression-level', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
         self.reverse_sort = False
@@ -45,13 +53,18 @@ class LogfileTailer (CCDaemon):
         if self.buf_maxbytes is None and self.buf_maxlines is None:
             self.buf_maxbytes = 1024 * 1024
 
+        if self.compression not in (None, '', 'none'):
+            if self.buf_maxbytes < self.BUF_MINBYTES:
+                self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.buf_maxbytes, self.BUF_MINBYTES)
+                self.buf_maxbytes = self.BUF_MINBYTES
+
     def startup (self):
         super(LogfileTailer, self).startup()
 
         self.logfile = None # full path
         self.logf = None # file object
         self.logfpos = None # tell()
-        self.probesleft = 2
+        self.probesleft = self.PROBESLEFT
         self.first = True
         self.tailed_files = 0
         self.tailed_bytes = 0
@@ -82,7 +95,7 @@ class LogfileTailer (CCDaemon):
                 self.log.info ("Tailing %s", self.logfile)
                 self.stat_inc ('tailed_files')
                 self.tailed_files += 1
-                self.probesleft = 2
+                self.probesleft = self.PROBESLEFT
             except IOError, e:
                 self.log.info ("%s", e)
                 time.sleep (0.2)
@@ -114,29 +127,39 @@ class LogfileTailer (CCDaemon):
                 if (self.buf_maxbytes is not None and self.bufsize >= self.buf_maxbytes) or \
                         (self.buf_maxlines is not None and len(self.buffer) >= self.buf_maxlines):
                     self.send_frag()
+                if self.probesleft < self.PROBESLEFT:
+                    self.log.info ("DEBUG: new data in old log (!)")
                 continue
 
             # reset EOF condition for next attempt
             self.logf.seek (0, os.SEEK_CUR)
 
-            if self.bufsize > 0:
+            if self.bufsize > 0 and self.compression in (None, '', 'none'):
                 self.send_frag()
             elif self.logfile != self.get_last_filename():
                 if self.probesleft <= 0:
+                    self.log.trace ("new log, closing old one")
                     self.send_frag()
                     self.logf.close()
                     self.logf = None
                 else:
+                    self.log.trace ("new log, still waiting for old one")
                     self.probesleft -= 1
                     time.sleep (0.1)
             else:
+                self.log.trace ("waiting")
                 time.sleep (0.1)
 
     def send_frag (self):
         if self.bufsize == 0:
             return
         start = time.time()
-        buf = ''.join(self.buffer)
+        if self.compression in (None, '', 'none'):
+            buf = ''.join(self.buffer)
+        else:
+            buf = cc.util.compress (''.join(self.buffer), self.compression,
+                                    {'level': self.compression_level})
+            self.log.debug ("compressed from %i to %i", self.bufsize, len(buf))
         if self.use_blob:
             msg = LogtailMessage(
                     filename = self.logfile,
@@ -149,11 +172,10 @@ class LogfileTailer (CCDaemon):
                     comp = self.compression,
                     data = buf.encode('base64'))
             self.ccpublish (msg)
-
-        # json/base64/compress time, actual send happens async
-        self.stat_inc('duration', time.time() - start)
-        self.stat_inc('count')
-
+        elapsed = time.time() - start
+        self.log.debug ("sent %i bytes in %f s", len(buf), elapsed)
+        self.stat_inc ('duration', elapsed) # json/base64/compress time, actual send happens async
+        self.stat_inc ('count')
         self.stat_inc ('tailed_bytes', self.bufsize)
         self.buffer = []
         self.bufsize = 0

@@ -8,7 +8,7 @@
 
 """
 
-import logging
+import os.path
 import re
 import signal
 import subprocess
@@ -32,7 +32,7 @@ _TID_INVALID = re.compile('[^-a-zA-Z0-9_]')
 class TaskState (object):
     """ Tracks task state (with help of watchdog) """
 
-    log = logging.getLogger('d:TaskState')
+    log = skytools.getLogger ('d:TaskState')
 
     def __init__ (self, uid, name, info, ioloop, cc, xtx):
         self.uid = uid
@@ -55,7 +55,7 @@ class TaskState (object):
 
     def stop (self):
         try:
-            self.log.info ('Killing %s', self.name)
+            self.log.info ('Signalling %s', self.name)
             skytools.signal_pidfile (self.pidfile, signal.SIGINT)
         except:
             self.log.exception ('signal_pidfile failed: %s', self.pidfile)
@@ -94,7 +94,7 @@ class TaskRunner(CCDaemon):
     Receive and process tasks.
     """
 
-    log = logging.getLogger('d:TaskRunner')
+    log = skytools.getLogger ('d:TaskRunner')
 
     def startup(self):
         super(TaskRunner, self).startup()
@@ -129,7 +129,7 @@ class TaskRunner(CCDaemon):
     def launch_task(self, cmsg):
         """Parse and execute task."""
 
-        self.log.debug("cmsg: %s", cmsg)
+        self.log.trace ("cmsg: %s", cmsg)
 
         msg = cmsg.get_payload(self.xtx)
         req = cmsg.get_dest()
@@ -144,7 +144,8 @@ class TaskRunner(CCDaemon):
             return
 
         jname = 'task_%s' % tid
-        jpidf = self.pidfile + '.' + jname
+        pfr, pfe = os.path.splitext (self.pidfile)
+        jpidf = pfr + '.' + jname + pfe
         info = {'task': msg,
                 'config': {
                     'pidfile': jpidf,
@@ -186,7 +187,7 @@ class TaskRunner(CCDaemon):
                 task_id = tid,
                 status = status,
                 feedback = fb)
-        self.log.info('msg: %r', rep)
+        self.log.debug ('msg: %r', rep)
         self.ccpublish (rep)
 
     def work(self):
@@ -195,10 +196,16 @@ class TaskRunner(CCDaemon):
         self.ioloop.start()
         return 1
 
+    def stop (self):
+        """ Called from signal handler """
+        super(TaskRunner, self).stop()
+        self.log.info ("stopping")
+        self.ioloop.stop()
+
     def periodic_reg(self):
         """Register taskrunner in central router."""
         msg = TaskRegisterMessage (host = self.local_id)
-        self.log.info ('msg: %r', msg)
+        self.log.debug ('msg: %r', msg)
         self.ccpublish (msg)
 
     def do_maint (self):

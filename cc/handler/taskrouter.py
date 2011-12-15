@@ -1,5 +1,4 @@
 
-import logging
 import time
 
 from zmq.eventloop.ioloop import PeriodicCallback
@@ -46,7 +45,7 @@ class TaskRouter(CCHandler):
     Clean old ones.
     """
 
-    log = logging.getLogger('h:TaskRouter')
+    log = skytools.getLogger('h:TaskRouter')
 
     CC_ROLES = ['remote']
 
@@ -70,7 +69,7 @@ class TaskRouter(CCHandler):
         Dispatch task reply to requestor (client).
         """
 
-        self.log.debug('got message: %r', cmsg)
+        self.log.trace('got message: %r', cmsg)
         req = cmsg.get_dest()
         sreq = req.split('.')
 
