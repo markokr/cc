@@ -30,7 +30,7 @@ def waitfile(fn):
             return True
         now = time.time()
         if now > end:
-            return False
+            raise AssertionError('waitfile(%s): file did not appear' % fn)
         time.sleep(0.2)
 
 def parsekonf(docstr):
