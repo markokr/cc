@@ -84,10 +84,10 @@ class TestInfofile(CCTestCase):
         self.assertNotEqual(e, 0)
 
         fn = os.path.join(TMPDIR, 'dst-infofile', hostname, 'dmesg')
-        self.assertTrue(waitfile(fn))
+        waitfile(fn)
 
         fn = os.path.join(TMPDIR, 'dst-infofile', 'me', 'info.1')
-        self.assertTrue(waitfile(fn))
+        waitfile(fn)
 
 if __name__ == '__main__':
     unittest.main()

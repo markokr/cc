@@ -4,7 +4,11 @@ import bz2
 import errno
 import gzip
 import os
-import StringIO
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 __all__ = ['write_atomic', 'compress', 'decompress']
 
@@ -47,7 +51,7 @@ def compress (buffer, method, options = {}):
         data = buffer
     elif method == 'gzip':
         cl = options.get ('level', 6) or 6
-        cs = StringIO.StringIO()
+        cs = StringIO()
         gz = gzip.GzipFile (fileobj = cs, mode = 'wb', compresslevel = cl)
         gz.write (buffer)
         gz.close()
@@ -67,7 +71,7 @@ def decompress (buffer, method, options = {}):
     if method in [None, '', 'none']:
         data = buffer
     elif method == 'gzip':
-        cs = StringIO.StringIO (buffer)
+        cs = StringIO (buffer)
         gz = gzip.GzipFile (fileobj = cs, mode = 'rb')
         data = gz.read()
         gz.close()

@@ -5,6 +5,7 @@ cc/*.pyc
 cc/handler/*.pyc
 cc/daemon/*.pyc
 cc/task/*.pyc
+cc/test/*.pyc
 keys/*.crt
 keys/*.key
 
