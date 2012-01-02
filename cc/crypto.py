@@ -408,7 +408,7 @@ class CryptoContext:
         if self.time_window:
             age = time.time() - msg.time
             if abs(age) > self.time_window:
-                self.log.error('too big time diff: %f', age)
+                self.log.error('time diff bigger than %d s', self.time_window)
                 return (None, None)
 
         if blob is not None:
