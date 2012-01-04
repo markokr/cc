@@ -3,20 +3,16 @@
 TODO
 ----
 
-- generic msg replay avoidance
-
-- logging reorg (global per-module log instead of self.log)
-
-- regtests for basic functionality
+- regtests for all daemons/handlers
 - regtests for basic failures (whether crashes are logged properly)
-
 - api: refactor zmq script w/ ioloop out
-- api: common zmq socket tuning
+- api: stop using ZMQ for daemon conf, instead use stdio like tasks.
+- make m2crypto optional, if no encryption is needed?
 
 task client side
 ----------------
-- cmdline task client (demo / testing) - make async
 - task param discovery
+- write some actual tasks
 
 task poller
 -----------
@@ -26,7 +22,6 @@ task poller
 
 task executor
 -------------
-- cc daemon that sends 'task.register' msg to CC with 'taskrouter' handler. (done)
 - when it receives task, must execute corresponding script.
 
 crypto
