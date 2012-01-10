@@ -18,6 +18,12 @@ def write_atomic (fn, data, bakext = None, mode = 'b'):
     if mode not in ['', 'b']:
         raise ValueError ("unsupported fopen mode")
 
+    # write new data to tmp file
+    fn2 = fn + '.new'
+    f = open(fn2, 'w' + mode)
+    f.write(data)
+    f.close()
+
     # link old data to bak file
     if bakext:
         if bakext.find('/') >= 0:
@@ -33,12 +39,6 @@ def write_atomic (fn, data, bakext = None, mode = 'b'):
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
-
-    # write new data to tmp file
-    fn2 = fn + '.new'
-    f = open(fn2, 'w' + mode)
-    f.write(data)
-    f.close()
 
     # atomically replace file
     os.rename(fn2, fn)
