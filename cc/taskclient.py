@@ -102,8 +102,8 @@ class TaskClient(DBScript):
         task = TaskSendMessage(
                 req = 'task.send.' + tid,
                 task_id = tid,
-                task_host = 'hostname',
-                task_handler = handler,
+                #task_host = hargs['taskhostname'],
+                #task_handler = handler,
                 **hargs)
         if self.options.sync:
             # sync approach
