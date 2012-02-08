@@ -25,7 +25,7 @@ Use-cases:
   Show module details:  %prog --show
   Launch module:        %prog --send [--cc=URL] K=V [K=V ...]
 
-Requered keys for '--send': handler=  host=
+Requered keys for '--send': task_handler=  task_host=
 """
 
 DEFCONF = {
