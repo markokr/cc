@@ -11,6 +11,19 @@ and providing config to them.  It is provided only for easier
 administration, as any daemon can be written to be standalone.
 
 
+Installation
+------------
+
+CC requires skytools 3.x for basic tooling and M2Crypto
+for encryption.  After that actual install is done with:
+
+  $ python setup.py install [--prefix=DIR]
+
+or to build .deb package:
+
+  $ make deb
+
+
 CC message
 ----------
 

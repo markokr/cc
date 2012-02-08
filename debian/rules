@@ -2,10 +2,16 @@
 
 DEB_PYTHON_SYSTEM=pysupport
 
+DH_VERBOSE=1
+
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/python-distutils.mk
 
 install/cc::
 	install -D --mode=0644 $(CURDIR)/debian/cc.ini $(CURDIR)/debian/cc/etc/cc/cc.ini
 	mv $(CURDIR)/debian/cc/usr/bin/ccserver.py $(CURDIR)/debian/cc/usr/bin/ccserver
+	#
+	# workaround for CDBS bug: run dh_pysupport twice
+	# to get modules working before init.d launch
+	dh_pysupport -pcc
 
