@@ -91,7 +91,7 @@ class TaskClient(DBScript):
         handler = self.args[0]
 
         hargs = {}
-        for a in self.args[1:]:
+        for a in self.args:
             if a.find('=') <= 0:
                 raise skytools.UsageError('need key=val')
             k, v = a.split('=', 1)
