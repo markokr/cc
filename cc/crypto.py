@@ -394,7 +394,7 @@ class CryptoContext:
             return (None, None)
         elif self.ca_name:
             if not part2:
-                self.log.error('Expect signed message')
+                self.log.error('Expect signed message: %r', part1)
                 return (None, None)
             self.log.trace("verify: %s", cmsg.get_dest())
             js, sgn = self.cms.verify(part1, part2, self.ca_name)
