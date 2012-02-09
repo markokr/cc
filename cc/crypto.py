@@ -254,11 +254,13 @@ class CMSTool:
             return self.cache[ck]
 
         # load ca cert(s)
-        ca_crt = self.ks.load_cert_obj(ca_name)
         xk = X509.X509_Stack()
-        xk.push(ca_crt)
         xs = X509.X509_Store()
-        xs.add_cert(ca_crt)
+        for cn in ca_name.split(','):
+            cn = cn.strip()
+            ca_crt = self.ks.load_cert_obj(cn)
+            xk.push(ca_crt)
+            xs.add_cert(ca_crt)
 
         # init SMIME object
         sm = SMIME.SMIME()
