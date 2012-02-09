@@ -149,6 +149,11 @@ class TaskRunner(CCDaemon):
         info = {'task': msg,
                 'config': {
                     'pidfile': jpidf,
+                    'cms-keystore': self.xtx.ks_dir,
+                    'cms-sign': self.xtx.sign_name,
+                    'cms-verify-ca': self.xtx.ca_name,
+                    'cms-encrypt': self.xtx.encrypt_name,
+                    'cms-decrypt': self.xtx.decrypt_name,
                 }}
         js = json.dumps(info)
 
