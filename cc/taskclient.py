@@ -118,14 +118,15 @@ class TaskClient(DBScript):
             self.log.info('done')
 
     def task_cb(self, done, rep):
-        rc = rep.get('feedback', {}).get('rc', '-1')
-        self.log.info('reply: %r (%s)', rep.status, rc)
-        out = rep.get('feedback', {}).get('out', '')
-        if out:
-            out = out.decode('base64')
-        if out:
-            for ln in out.splitlines():
-                print '>>', ln
+        if rep:
+            rc = rep.get('feedback', {}).get('rc', '-1')
+            self.log.info('reply: %r (%s)', rep.status, rc)
+            out = rep.get('feedback', {}).get('out', '')
+            if out:
+                out = out.decode('base64')
+            if out:
+                for ln in out.splitlines():
+                    print '>>', ln
 
         if done:
             self.ioloop.stop()
