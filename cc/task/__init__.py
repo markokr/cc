@@ -79,7 +79,7 @@ class CCTask(CCJob):
         task = self.task_info['task']
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % self.task_uid,
-                handler = task['handler'],
+                handler = task['task_handler'],
                 task_id = task['task_id'],
                 status = 'feedback',
                 feedback = fb)
@@ -93,7 +93,7 @@ class CCTask(CCJob):
         task = self.task_info['task']
         rep = TaskReplyMessage(
                 req = 'task.reply.%s' % self.task_uid,
-                handler = task['handler'],
+                handler = task['task_handler'],
                 task_id = task['task_id'],
                 status = stat)
         self.ccpublish (rep)
@@ -115,3 +115,4 @@ class CCTask(CCJob):
             log_pid = rec.process,
             log_line = rec.lineno,
             log_function = rec.funcName)
+
