@@ -36,7 +36,7 @@ class SampleTask(CCTask):
             fb = {'i': i}
             self.send_feedback (fb)
         # task done
-        self.log.info ('task %i done', task['task_id'])
+        self.log.info ('task %s done', task['task_id'])
         self.send_finished()
 
 if __name__ == '__main__':

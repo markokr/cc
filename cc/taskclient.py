@@ -25,7 +25,7 @@ Use-cases:
   Show module details:  %prog --show
   Launch module:        %prog --send [--cc=URL] K=V [K=V ...]
 
-Requered keys for '--send': handler=  host=
+Requered keys for '--send': task_handler=  task_host=
 """
 
 DEFCONF = {
@@ -64,6 +64,7 @@ class TaskClient(DBScript):
     def init_optparse(self, p = None):
         p = super(TaskClient, self).init_optparse(p)
         p.add_option("--cc", help="CC task router location")
+        p.add_option("--config", help="config file")
         p.add_option("--list", action="store_true", help="list task modules")
         p.add_option("--show", action="store_true", help="show module details")
         p.add_option("--send", action="store_true", help="send task")
@@ -72,12 +73,13 @@ class TaskClient(DBScript):
         return p
 
     def load_config(self):
-        return skytools.Config(self.service_name, None, user_defs = DEFCONF)
+        fn = self.options.config
+        return skytools.Config(self.service_name, fn, user_defs = DEFCONF)
 
     def startup(self):
         super(TaskClient, self).startup()
 
-        self.cc_url = self.options.cc or 'tcp://127.0.0.1:15000'
+        self.cc_url = self.options.cc or self.cf.get('cc', 'tcp://127.0.0.1:15000')
         self.ioloop = IOLoop.instance()
         self.xtx = CryptoContext(self.cf)
         self.ccrq = CCReqStream(self.cc_url, self.xtx, self.ioloop)
@@ -91,7 +93,7 @@ class TaskClient(DBScript):
         handler = self.args[0]
 
         hargs = {}
-        for a in self.args[1:]:
+        for a in self.args:
             if a.find('=') <= 0:
                 raise skytools.UsageError('need key=val')
             k, v = a.split('=', 1)
@@ -102,8 +104,8 @@ class TaskClient(DBScript):
         task = TaskSendMessage(
                 req = 'task.send.' + tid,
                 task_id = tid,
-                task_host = 'hostname',
-                task_handler = handler,
+                #task_host = hargs['taskhostname'],
+                #task_handler = handler,
                 **hargs)
         if self.options.sync:
             # sync approach
@@ -116,7 +118,16 @@ class TaskClient(DBScript):
             self.log.info('done')
 
     def task_cb(self, done, rep):
-        self.log.info('reply: %r', rep)
+        if rep:
+            rc = rep.get('feedback', {}).get('rc', '-1')
+            self.log.info('reply: %r (%s)', rep.status, rc)
+            out = rep.get('feedback', {}).get('out', '')
+            if out:
+                out = out.decode('base64')
+            if out:
+                for ln in out.splitlines():
+                    print '>>', ln
+
         if done:
             self.ioloop.stop()
 
