@@ -97,7 +97,8 @@ class TailWriter (CCHandler):
 
             now = time.time()
             fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
-                   'wtime': now, 'ftime': now, 'buf': [], 'bufsize': 0 }
+                   'wtime': now, 'ftime': now, 'buf': [], 'bufsize': 0,
+                   'offset': 0 }
             self.files[fi] = fd
 
         raw = cmsg.get_part3() # blob
@@ -125,8 +126,9 @@ class TailWriter (CCHandler):
 
         if hasattr (data, 'fpos'):
             fpos = fd['obj'].tell()
-            if data['fpos'] != fpos:
-                self.log.warn ("sync lost: %i <> %i", data['fpos'], fpos)
+            if data['fpos'] != fpos + fd['offset']:
+                self.log.warn ("sync lost: %i -> %i", fpos, data['fpos'])
+                fd['offset'] = data['fpos'] - fpos
 
         # append to file
         self.log.debug ('appending %i bytes to %s', len(body), fd['path'])
