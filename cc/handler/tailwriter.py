@@ -44,7 +44,7 @@ class TailWriter (CCHandler):
             if self.compression not in ('gzip', 'bzip2'):
                 self.log.error ("unsupported compression: %s", self.compression)
             self.compression_level = self.cf.getint ('compression-level', '')
-            self.buf_maxbytes = self.cf.getint ('buffer-bytes', 1024 * 1024)
+            self.buf_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', 1024 * 1024))
             if self.buf_maxbytes < BUF_MINBYTES:
                 self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.buf_maxbytes, BUF_MINBYTES)
                 self.buf_maxbytes = BUF_MINBYTES

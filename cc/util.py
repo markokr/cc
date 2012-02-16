@@ -4,13 +4,15 @@ import bz2
 import errno
 import gzip
 import os
+import re
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
-__all__ = ['write_atomic', 'compress', 'decompress']
+__all__ = ['write_atomic', 'compress', 'decompress', 'hsize_to_bytes']
+
 
 def write_atomic (fn, data, bakext = None, mode = 'b'):
     """Write [text] file with rename."""
@@ -81,3 +83,14 @@ def decompress (buffer, method, options = {}):
     else:
         raise NotImplementedError ("unknown compression: %s" % method)
     return data
+
+
+def hsize_to_bytes (input):
+    """ Convert sizes from human format to bytes (string to integer) """
+
+    assert isinstance (input, str)
+    m = re.match (r"^([0-9]+) *([KMGTPEZY]?)B?$", input.strip(), re.IGNORECASE)
+    if not m: raise ValueError ("cannot parse: %s" % input)
+    units = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    bytes = int(m.group(1)) * 1024 ** units.index(m.group(2).upper())
+    return bytes

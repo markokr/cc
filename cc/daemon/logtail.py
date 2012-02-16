@@ -42,12 +42,12 @@ class LogfileTailer (CCDaemon):
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
         self.reverse_sort = False
-        self.buf_maxbytes = self.cf.getint ('buffer-bytes', -1)
+        self.buf_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', '0'))
         self.buf_maxlines = self.cf.getint ('buffer-lines', -1)
         self.buf_maxdelay = 1.0
 
         # compensate for our config class weakness
-        if self.buf_maxbytes < 0: self.buf_maxbytes = None
+        if self.buf_maxbytes <= 0: self.buf_maxbytes = None
         if self.buf_maxlines < 0: self.buf_maxlines = None
         # set defaults if nothing found in config
         if self.buf_maxbytes is None and self.buf_maxlines is None:
