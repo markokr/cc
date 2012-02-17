@@ -6,9 +6,12 @@ Logfile tailer for rotated log files.
 Assumes that:
 . All log files reside in the same directory.
 . We can find last log file by sorting the file list alphabetically.
-. When log is switched, we start tailing from the last file - assuming
-  there will be no gaps (quick processing on sufficiently large files).
+
+When log is switched, the tailer continues tailing from the next file.
+When the tailer is restarted, it continues tailing from saved position.
 """
+
+from __future__ import with_statement
 
 import glob
 import os
@@ -40,6 +43,7 @@ class LogfileTailer (CCDaemon):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
+        self.lag_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('lag-max-bytes', '0'))
 
         self.reverse_sort = False
         self.buf_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', '0'))
@@ -71,6 +75,44 @@ class LogfileTailer (CCDaemon):
         self.buffer = []
         self.bufsize = 0
         self.bufseek = None
+        self.saved_fpos = None
+
+        try:
+            sfn = self.get_save_filename()
+            with open (sfn, "r") as f:
+                s = f.readline().split('\t', 1)
+                self.logfile = s[1].strip()
+                self.saved_fpos = int(s[0])
+                self.log.info ("found saved state for %s", self.logfile)
+
+            lag = self.count_lag_bytes()
+            if lag is not None:
+                self.log.info ("currently lagging %i bytes behind", lag)
+                if lag > self.lag_maxbytes:
+                    self.log.warn ("lag too big, skipping")
+                    self.logfile = None
+                    self.saved_fpos = None
+            else:
+                self.log.warn ("cannot determine lag, skipping")
+                self.logfile = None
+                self.saved_fpos = None
+            os.unlink (sfn)
+        except IOError:
+            pass
+
+    def count_lag_bytes (self):
+        files = self.get_all_filenames()
+        if self.logfile not in files or self.saved_fpos is None:
+            return None
+        lag = 0
+        while True:
+            fn = files.pop()
+            st = os.stat(fn)
+            if (fn == self.logfile):
+                break
+            lag += st.st_size
+        lag += st.st_size - self.saved_fpos
+        return lag
 
     def get_all_filenames (self):
         """ Return sorted list of all log file names """
@@ -79,11 +121,32 @@ class LogfileTailer (CCDaemon):
         return lfns
 
     def get_last_filename (self):
-        """ Return the name of current log file """
+        """ Return the name of latest log file """
         files = self.get_all_filenames()
         if files:
             return files[-1]
         return None
+
+    def get_next_filename (self):
+        """ Return the name of "next" log file """
+        files = self.get_all_filenames()
+        if not files:
+            return None
+        try:
+            i = files.index (self.logfile)
+            if not self.first:
+                fn = files[i+1]
+            else:
+                fn = files[i]
+        except ValueError:
+            fn = files[-1]
+        except IndexError:
+            fn = files[i]
+        return fn
+
+    def get_save_filename (self):
+        """ Return the name of save file """
+        return os.path.splitext(self.pidfile)[0] + ".save"
 
     def try_open_file (self, name):
         """ Try open log file; sleep a bit if unavailable. """
@@ -112,12 +175,15 @@ class LogfileTailer (CCDaemon):
         while not self.last_sigint:
             if not self.logf:
                 # if not already open, keep trying until it becomes available
-                self.try_open_file (self.get_last_filename())
+                self.try_open_file (self.get_next_filename())
                 continue
 
             if self.first:
-                # seek to end of first file
-                self.logf.seek (0, os.SEEK_END)
+                # seek to saved position or end of first file
+                if self.saved_fpos:
+                    self.logf.seek (self.saved_fpos, os.SEEK_SET)
+                else:
+                    self.logf.seek (0, os.SEEK_END)
                 self.bufseek = self.logfpos = self.logf.tell()
                 self.log.info ("started at file position %i", self.logfpos)
                 self.first = False
@@ -141,7 +207,7 @@ class LogfileTailer (CCDaemon):
 
             if self.bufsize > 0 and self.compression in (None, '', 'none'):
                 self.send_frag()
-            elif self.logfile != self.get_last_filename():
+            elif self.logfile != self.get_next_filename():
                 if self.probesleft <= 0:
                     self.log.trace ("new log, closing old one")
                     self.send_frag()
@@ -197,6 +263,14 @@ class LogfileTailer (CCDaemon):
         except (IOError, OSError), e:
             self.log.error ("%s", e)
         return 1
+
+    def stop (self):
+        super(LogfileTailer, self).stop()
+        self.log.info ("stopping")
+        if self.logf:
+            with open (self.get_save_filename(), "w") as f:
+                print >> f, "%i\t%s" % (self.bufseek, self.logfile)
+                self.log.info ("saved offset %i for %s", self.bufseek, self.logfile)
 
 
 if __name__ == '__main__':
