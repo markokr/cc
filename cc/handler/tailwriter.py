@@ -65,7 +65,7 @@ class TailWriter (CCHandler):
         # sanitize
         host = host.replace ('/', '_')
         if mode not in ['', 'b']:
-            self.log.warn ("unsupported fopen mode ('%s'), ignoring it", mode)
+            self.log.warning ("unsupported fopen mode ('%s'), ignoring it", mode)
             mode = 'b'
 
         # add file ext if needed
@@ -127,7 +127,7 @@ class TailWriter (CCHandler):
         if hasattr (data, 'fpos'):
             fpos = fd['obj'].tell()
             if data['fpos'] != fpos + fd['offset']:
-                self.log.warn ("sync lost: %i -> %i", fpos, data['fpos'])
+                self.log.warning ("sync lost: %i -> %i", fpos, data['fpos'])
                 fd['offset'] = data['fpos'] - fpos
 
         # append to file

@@ -53,7 +53,7 @@ class InfoWriter(CCHandler):
         # sanitize
         host = host.replace('/', '_')
         if mode not in ['', 'b']:
-            self.log.warn ("unsupported fopen mode ('%s'), ignoring it", mode)
+            self.log.warning ("unsupported fopen mode ('%s'), ignoring it", mode)
             mode = 'b'
 
         # add file ext if needed

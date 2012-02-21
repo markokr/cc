@@ -89,11 +89,11 @@ class LogfileTailer (CCDaemon):
             if lag is not None:
                 self.log.info ("currently lagging %i bytes behind", lag)
                 if lag > self.lag_maxbytes:
-                    self.log.warn ("lag too big, skipping")
+                    self.log.warning ("lag too big, skipping")
                     self.logfile = None
                     self.saved_fpos = None
             else:
-                self.log.warn ("cannot determine lag, skipping")
+                self.log.warning ("cannot determine lag, skipping")
                 self.logfile = None
                 self.saved_fpos = None
             os.unlink (sfn)
