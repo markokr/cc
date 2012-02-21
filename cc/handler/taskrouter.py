@@ -110,7 +110,9 @@ class TaskRouter(CCHandler):
         """Remember ZMQ route for host"""
 
         route = cmsg.get_route()
-        msg = cmsg.get_payload (self.xtx)
+        msg = cmsg.get_payload(self.xtx)
+        if not msg:
+            return
         host = msg.host
         self.log.debug ('(%s, %s)', host, route)
         hr = HostRoute (host, route)
