@@ -7,7 +7,7 @@ Standards-Version: 3.8.3
 
 Package: cc
 Architecture: all
-Depends: ${python:Depends}, python (>= 2.6) | python-simplejson, python-zmq (>= 2.1), python-m2crypto, python-skytools3 | skytools (>= 3.0.git.111215)
+Depends: ${python:Depends}, python (>= 2.6) | python-simplejson, python-zmq (>= 2.1), python-m2crypto (>= 0.21.1), python-skytools3 | skytools (>= 3.0.git.111215)
 Pre-Depends: adduser
 Description: Command-and-control daemon and library
  Based on zmq
