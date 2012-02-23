@@ -40,5 +40,5 @@ class SampleTask(CCTask):
         self.send_finished()
 
 if __name__ == '__main__':
-    t = SampleTask('t:sample', sys.argv[1:])
+    t = SampleTask('cc.task.sample', sys.argv[1:])
     t.start()

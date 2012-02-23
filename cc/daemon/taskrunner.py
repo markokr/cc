@@ -14,6 +14,7 @@ import signal
 import subprocess
 import sys
 import time
+import traceback
 
 from cc import json
 from cc.daemon import CCDaemon
@@ -105,10 +106,10 @@ class TaskRunner(CCDaemon):
         self.ccs.on_recv(self.handle_cc_recv)
 
         self.local_id = self.cf.get('local-id', self.hostname)
-        self.reg_period = self.cf.getint ('reg-period', 5 * 60)
-        self.maint_period = self.cf.getint ('maint-period', 60)
-        self.grace_period = self.cf.getint ('task-grace-period', 15 * 60)
-        self.task_heartbeat = self.cf.getboolean ('task-heartbeat', False)
+        self.reg_period = self.cf.getint('reg-period', 5 * 60)
+        self.maint_period = self.cf.getint('maint-period', 60)
+        self.grace_period = self.cf.getint('task-grace-period', 15 * 60)
+        self.task_heartbeat = self.cf.getboolean('task-heartbeat', False)
 
         self.tasks = {}
 
@@ -124,7 +125,8 @@ class TaskRunner(CCDaemon):
             cmsg = CCMessage(zmsg)
             self.launch_task(cmsg)
         except:
-            self.log.exception('crashed, dropping msg')
+            ex = traceback.format_exc()
+            self.log.error('crashed, dropping msg: %s', ex)
 
     def launch_task(self, cmsg):
         """Parse and execute task."""
@@ -146,21 +148,28 @@ class TaskRunner(CCDaemon):
         jname = 'task_%s' % tid
         pfr, pfe = os.path.splitext (self.pidfile)
         jpidf = pfr + '.' + jname + pfe
-        info = {'task': msg,
-                'config': {
-                    'pidfile': jpidf,
-                    'cms-keystore': self.xtx.ks_dir,
-                    'cms-sign': self.xtx.sign_name,
-                    'cms-verify-ca': self.xtx.ca_name,
-                    'cms-encrypt': self.xtx.encrypt_name,
-                    'cms-decrypt': self.xtx.decrypt_name,
-                }}
+        info = {'task': msg, 'signature': cmsg.get_part2().encode('base64')}
         js = json.dumps(info)
 
-        self.task_reply(tid, 'starting') # XXX: what for ?
-
         mod = msg['task_handler']
-        cmd = ['python', '-m', mod, '--cc', self.options.cc, '--cctask', jname, '-d']
+        if not self.cf.has_section(mod):
+            msg = 'Task module %r not configured' % mod
+            self.log.error(msg)
+            fb = {'rc': -1, 'out': msg.encode('base64')}
+            self.task_reply(tid, 'failed', fb)
+            return
+
+        sudo = ''
+        if self.cf.cf.has_option(mod, 'sudo'):
+            sudo = self.cf.cf.get(mod, 'sudo')
+
+        # show that task got to taskrnuner
+        self.task_reply(tid, 'starting')
+
+        cmd = []
+        if sudo:
+            cmd = ['/usr/bin/sudo', '-n', '-u', sudo]
+        cmd += ['python', '-m', mod, '-d', self.cf.filename]
         p = subprocess.Popen(cmd, 0,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
@@ -209,8 +218,8 @@ class TaskRunner(CCDaemon):
 
     def periodic_reg(self):
         """Register taskrunner in central router."""
+        self.log.info('Registering as "%s"', self.local_id)
         msg = TaskRegisterMessage (host = self.local_id)
-        self.log.debug ('msg: %r', msg)
         self.ccpublish (msg)
 
     def do_maint (self):

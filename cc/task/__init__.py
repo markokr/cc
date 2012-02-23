@@ -54,9 +54,6 @@ class CCTask(CCJob):
 
         super(CCTask, self).__init__(service_name, args)
 
-    def fetch_config(self):
-        return self.task_info['config']
-
     def run(self):
         try:
             CCJob.run(self)

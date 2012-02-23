@@ -91,6 +91,7 @@ class CCTestCase(unittest.TestCase):
 
         # init new
         konf = parsekonf(self.__doc__)
+        daemons = {}
         for fn, body in konf.items():
             #print 'setUp', fn
             pf = fn.replace('.ini', '.pid')
@@ -111,10 +112,12 @@ class CCTestCase(unittest.TestCase):
             f.write(body)
             f.close()
 
-            self.runcc(fn, '-d')
+            if body.find('pidfile') > 0:
+                daemons[fn] = body
+                self.runcc(fn, '-d')
 
         time.sleep(5)
-        for fn in konf.keys():
+        for fn in daemons.keys():
             pf = fn.replace('.ini', '.pid')
             lf = fn.replace('.ini', '.log')
             if skytools.signal_pidfile(pf, 0):
@@ -127,13 +130,16 @@ class CCTestCase(unittest.TestCase):
 
     def tearDown(self):
         konf = parsekonf(self.__doc__)
+        daemons = {}
         for fn, body in konf.items():
             #print 'tearDown', fn
-            pf = fn.replace('.ini', '.pid')
-            skytools.signal_pidfile(pf, signal.SIGHUP)
+            if body.find('pidfile') > 0:
+                daemons[fn] = body
+                pf = fn.replace('.ini', '.pid')
+                skytools.signal_pidfile(pf, signal.SIGHUP)
 
         time.sleep(0.5)
-        for fn, body in konf.items():
+        for fn, body in daemons.items():
             pf = fn.replace('.ini', '.pid')
             skytools.signal_pidfile(pf, signal.SIGTERM)
 
@@ -163,7 +169,7 @@ class CCTestCase(unittest.TestCase):
         skytools.set_nonblocking(p.stdout, 1)
 
         # loop some time
-        end = time.time() + 5
+        end = time.time() + 10
         out = []
         while 1:
             if p.poll() is not None:

@@ -114,7 +114,7 @@ class TaskRouter(CCHandler):
         if not msg:
             return
         host = msg.host
-        self.log.debug ('(%s, %s)', host, route)
+        self.log.info('Got registration for %s', host)
         hr = HostRoute (host, route)
         self.route_map[hr.host] = hr
 

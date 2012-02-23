@@ -72,14 +72,10 @@ class TaskClient(DBScript):
         p.set_usage(_usage.strip())
         return p
 
-    def load_config(self):
-        fn = self.options.config
-        return skytools.Config(self.service_name, fn, user_defs = DEFCONF)
-
     def startup(self):
         super(TaskClient, self).startup()
 
-        self.cc_url = self.options.cc or self.cf.get('cc', 'tcp://127.0.0.1:15000')
+        self.cc_url = self.cf.get('cc')
         self.ioloop = IOLoop.instance()
         self.xtx = CryptoContext(self.cf)
         self.ccrq = CCReqStream(self.cc_url, self.xtx, self.ioloop)
@@ -88,12 +84,8 @@ class TaskClient(DBScript):
     def work(self):
         self.set_single_loop(1)
 
-        if not self.args:
-            raise skytools.UsageError('need handler name')
-        handler = self.args[0]
-
         hargs = {}
-        for a in self.args:
+        for a in self.args[1:]:
             if a.find('=') <= 0:
                 raise skytools.UsageError('need key=val')
             k, v = a.split('=', 1)
@@ -104,8 +96,6 @@ class TaskClient(DBScript):
         task = TaskSendMessage(
                 req = 'task.send.' + tid,
                 task_id = tid,
-                #task_host = hargs['taskhostname'],
-                #task_handler = handler,
                 **hargs)
         if self.options.sync:
             # sync approach
@@ -119,15 +109,21 @@ class TaskClient(DBScript):
 
     def task_cb(self, done, rep):
         if rep:
-            rc = rep.get('feedback', {}).get('rc', '-1')
-            self.log.info('reply: %r (%s)', rep.status, rc)
-            out = rep.get('feedback', {}).get('out', '')
+            fb = rep.get('feedback', {})
+            rc = fb.get('rc', '-1')
+            self.log.info('reply: %r (%s)', rep.get('status', '?status?'), rc)
+            out = fb.get('out', '')
+            msg = fb.get('log_msg')
             if out:
                 out = out.decode('base64')
-            if out:
-                for ln in out.splitlines():
-                    print '>>', ln
-
+                if out:
+                    for ln in out.splitlines():
+                        print '>>', ln
+            elif msg:
+                lev = fb.get('log_level', '???')
+                print '>> %s %s' % (lev, msg)
+            else:
+                print '>> %r' % fb
         if done:
             self.ioloop.stop()
 

@@ -10,6 +10,7 @@ from cc.crypto import CryptoContext
 from cc.handler import CCHandler
 from cc.message import CCMessage
 from cc.reqs import ErrorMessage, JobConfigReplyMessage
+from cc.job import make_job_defaults
 
 import skytools
 
@@ -26,25 +27,17 @@ TIMER_TICK = 2
 class JobState:
     log = skytools.getLogger('h:JobState')
 
-    def __init__(self, jname, jcf, cc_url, ioloop, pidfile, xtx):
+    def __init__(self, jname, jcf, cc_url, ioloop, xtx):
         self.jname = jname
         self.jcf = jcf
         self.proc = None
         self.cc_url = cc_url
         self.timer = None
         self.ioloop = ioloop
-        self.pidfile = pidfile
+        self.pidfile = jcf.getfile('pidfile')
         self.start_count = 0
         self.start_time = None
         self.dead_since = None
-
-        self.cfdict = {
-                'job_name': self.jname,
-                'pidfile': self.pidfile,
-        }
-        xtx.fill_config(self.cfdict)
-        for o in self.jcf.options():
-            self.cfdict[o] = self.jcf.get(o)
 
     def _watchdog_wait (self):
         # y = a + bx , apply cap
@@ -86,7 +79,7 @@ class JobState:
         mod = self.jcf.get('module', '')
         script = self.jcf.get('script', '')
         cls = self.jcf.get('class', '')
-        args = ['-d', '--cc', self.cc_url, '--ccdaemon', self.jname]
+        args = [self.jcf.filename, self.jname, '-d']
         args.extend (args_extra)
         if mod:
             cmd = ['python', '-m', mod] + args
@@ -133,12 +126,10 @@ class JobMgr(CCHandler):
     def __init__(self, hname, hcf, ccscript):
         super(JobMgr, self).__init__(hname, hcf, ccscript)
 
+        self.cc_config = ccscript.args[0]
+
         self.local_url = ccscript.local_url
         self.cc_job_name = ccscript.job_name
-        self.pidfiledir = hcf.getfile ('pidfiledir', '')
-        if not self.pidfiledir:
-            self.pidfiledir = os.path.dirname (ccscript.pidfile)
-            self.log.debug ("defaulting pidfiledir to %s", self.pidfiledir)
 
         self.job_args_extra = []
         if ccscript.options.quiet:
@@ -148,48 +139,22 @@ class JobMgr(CCHandler):
 
         self.jobs = {}
         for dname in self.cf.getlist('daemons'):
-            self.add_job(dname)
+            defs = make_job_defaults(ccscript.cf, dname)
+            self.add_job(dname, defs)
 
         self.xtx = CryptoContext(None)
 
-    def add_job(self, jname):
-        jcf = skytools.Config(jname, self.cf.filename, ignore_defs = True)
-        pidf = "%s/%s.%s.pid" % (self.pidfiledir, self.cc_job_name, jname)
-        jstate = JobState(jname, jcf, self.local_url, self.ioloop, pidf, self.xtx)
-        self.jobs[jname] = jstate
-        jstate.start (self.job_args_extra)
+    def add_job(self, jname, defs):
+        jcf = skytools.Config(jname, self.cf.filename, user_defs = defs)
+        j = JobState(jname, jcf, self.local_url, self.ioloop, self.xtx)
+        self.jobs[jname] = j
+        j.start(self.job_args_extra)
 
     def handle_msg(self, cmsg):
         """ Got message from client, answer it. """
 
-        self.log.debug('JobMgr req: %s', cmsg)
-        data = cmsg.get_payload(self.xtx)
-        if not data:
-            return
-
-        if data.req == 'job.config':
-            if not hasattr (data, 'job_name'):
-                msg = ErrorMessage(
-                    req = "error.%s" % data.req,
-                    msg = "Missing job_name")
-            elif not data.job_name in self.jobs:
-                msg = ErrorMessage(
-                    req = "error.%s" % data.req,
-                    job_name = data.job_name,
-                    msg = "Unknown job_name")
-            else:
-                job = self.jobs[data.job_name]
-                msg = JobConfigReplyMessage(
-                    job_name = data.job_name,
-                    config = job.cfdict)
-        else:
-            msg = ErrorMessage(
-                req = "error.%s" % data.req,
-                msg = 'Unsupported req')
-        crep = self.xtx.create_cmsg(msg)
-        crep.take_route(cmsg)
-        self.cclocal.send_cmsg(crep)
-        self.log.debug('JobMgr answer: %s', crep)
+        self.log.warning('JobMgr req: %s', cmsg)
+        return
 
     def stop(self):
         self.log.info('Stopping CC daemons')

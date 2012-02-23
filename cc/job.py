@@ -5,6 +5,7 @@ CC daemon / task
 
 import logging
 import socket
+import sys
 
 import skytools
 import zmq
@@ -35,9 +36,20 @@ class NoLog:
     def critical(self, *args): pass
 
 
+def make_job_defaults(main_cf, job_service_name):
+    cc_jobname = main_cf.get('job_name')
+    defs = {}
+    defs['use_skylog'] = '0'
+    defs['service_name'] = job_service_name
+    defs['job_name'] = "%s_%s" % (cc_jobname, job_service_name)
+    if main_cf.has_option('pidfile'):
+        defs['pidfile'] = main_cf.cf.get('ccserver', 'pidfile', raw=True)
+    return defs
+
 class CCJob(skytools.DBScript):
     zctx = None
     cc = None
+    cc_url = None
 
     zmq_nthreads = 1
     zmq_hwm = 1000
@@ -92,14 +104,6 @@ class CCJob(skytools.DBScript):
         cmsg = self.xtx.create_cmsg (msg, blob)
         cmsg.send_to (self.cc)
 
-    def fetch_config(self):
-        """ Query config """
-        msg = JobConfigRequestMessage (job_name = self.job_name)
-        rep = self.ccquery(msg)
-        cf = rep.config
-        cf['use_skylog'] = '0'
-        return rep.config
-
     def load_config(self):
         """Loads and returns skytools.Config instance.
 
@@ -107,15 +111,17 @@ class CCJob(skytools.DBScript):
         file name.  Can be overrided.
         """
 
-        if self.options.ccdaemon:
-            self.job_name = self.options.ccdaemon
-        elif self.options.cctask:
-            self.job_name = self.options.cctask
-        else:
-            raise skytools.UsageError('Need either --cctask or --ccdaemon')
+        cf = skytools.Config('ccserver', self.args[0])
+        self.cc_jobname = cf.get('job_name')
+        self.cc_url = cf.get('cc-socket')
 
-        conf = self.fetch_config()
-        return skytools.Config(self.service_name, None, user_defs = conf)
+        if len(self.args) > 1:
+            self.service_name = self.args[1]
+
+        self.cf_defaults = make_job_defaults(cf, self.service_name)
+
+        cf = super(CCJob, self).load_config()
+        return cf
 
     def _boot_daemon(self):
         # close ZMQ context/thread before forking to background
@@ -127,7 +133,7 @@ class CCJob(skytools.DBScript):
         if not self.zctx:
             self.zctx = zmq.Context(self.zmq_nthreads)
         if not self.cc:
-            url = self.options.cc
+            url = self.cc_url
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.connect(url)
             self.cc.setsockopt(zmq.LINGER, 500)
@@ -142,14 +148,6 @@ class CCJob(skytools.DBScript):
             self.zctx.term()
             self.zctx = None
 
-    def init_optparse(self, parser = None):
-        p = super(CCJob, self).init_optparse(parser)
-
-        p.add_option("--cc", help = "master CC url")
-        p.add_option("--ccdaemon", help = "daemon name")
-        p.add_option("--cctask", help = "task id")
-
-        return p
-
     def stat_inc(self, key, increase = 1):
         return self.stat_increase (key, increase)
+
