@@ -2,19 +2,25 @@
 
 """
 Logfile tailer for rotated log files.
+Supports 2 operating modes: classic, rotated.
 
 Assumes that:
 . All log files reside in the same directory.
 . We can find last log file by sorting the file list alphabetically.
 
-When log is switched, the tailer continues tailing from the next file.
-When the tailer is restarted, it continues tailing from saved position.
+In classic mode:
+. When log is switched, the tailer continues tailing from the next file.
+. When the tailer is restarted, it continues tailing from saved position.
+
+In rotated mode:
+. When log is switched, the tailer continues tailing from reopened file.
 """
 
 from __future__ import with_statement
 
 import glob
 import os
+import re
 import sys
 import time
 
@@ -36,8 +42,19 @@ class LogfileTailer (CCDaemon):
     def reload (self):
         super(LogfileTailer, self).reload()
 
+        self.op_mode = self.cf.get ('operation-mode', '')
+        if self.op_mode not in (None, '', 'classic', 'rotated'):
+            self.log.error ("unknown operation-mode: %s", self.op_mode)
+
         self.logdir = self.cf.getfile ('logdir')
-        self.logmask = self.cf.get ('logmask')
+        if self.op_mode in (None, '', 'classic'):
+            self.logmask = self.cf.get ('logmask')
+        elif self.op_mode == 'rotated':
+            self.logname = self.cf.get ('logname')
+            if re.search ('\?|\*', self.logname):
+                self.log.error ("wildcards in logname not supported: %s", self.logname)
+            self.logmask = self.logname
+
         self.compression = self.cf.get ('compression', '')
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
@@ -76,6 +93,7 @@ class LogfileTailer (CCDaemon):
         self.bufsize = 0
         self.bufseek = None
         self.saved_fpos = None
+        self.logf_dev = self.logf_ino = None
 
         try:
             sfn = self.get_save_filename()
@@ -85,17 +103,19 @@ class LogfileTailer (CCDaemon):
                 self.saved_fpos = int(s[0])
                 self.log.info ("found saved state for %s", self.logfile)
 
+            if self.op_mode == 'rotated':
+                self.log.info ("cannot use saved state in this operation mode")
+                self.logfile = self.saved_fpos = None
+
             lag = self.count_lag_bytes()
             if lag is not None:
                 self.log.info ("currently lagging %i bytes behind", lag)
                 if lag > self.lag_maxbytes:
                     self.log.warning ("lag too big, skipping")
-                    self.logfile = None
-                    self.saved_fpos = None
+                    self.logfile = self.saved_fpos = None
             else:
                 self.log.warning ("cannot determine lag, skipping")
-                self.logfile = None
-                self.saved_fpos = None
+                self.logfile = self.saved_fpos = None
             os.unlink (sfn)
         except IOError:
             pass
@@ -148,6 +168,15 @@ class LogfileTailer (CCDaemon):
         """ Return the name of save file """
         return os.path.splitext(self.pidfile)[0] + ".save"
 
+    def is_new_file_available (self):
+        if self.op_mode in (None, '', 'classic'):
+            return (self.logfile != self.get_next_filename())
+        elif self.op_mode == 'rotated':
+            st = os.stat (self.logfile)
+            return (st.st_dev != self.logf_dev or st.st_ino != self.logf_ino)
+        else:
+            raise ValueError ("unsupported mode of operation")
+
     def try_open_file (self, name):
         """ Try open log file; sleep a bit if unavailable. """
         if name:
@@ -162,6 +191,8 @@ class LogfileTailer (CCDaemon):
                 self.stat_inc ('tailed_files')
                 self.tailed_files += 1
                 self.probesleft = self.PROBESLEFT
+                st = os.fstat (self.logf.fileno())
+                self.logf_dev, self.logf_ino = st.st_dev, st.st_ino
             except IOError, e:
                 self.log.info ("%s", e)
                 time.sleep (0.2)
@@ -207,7 +238,7 @@ class LogfileTailer (CCDaemon):
 
             if self.bufsize > 0 and self.compression in (None, '', 'none'):
                 self.send_frag()
-            elif self.logfile != self.get_next_filename():
+            elif self.is_new_file_available():
                 if self.probesleft <= 0:
                     self.log.trace ("new log, closing old one")
                     self.send_frag()
@@ -232,19 +263,20 @@ class LogfileTailer (CCDaemon):
                                     {'level': self.compression_level})
             self.log.debug ("compressed from %i to %i", self.bufsize, len(buf))
         if self.use_blob:
-            msg = LogtailMessage(
-                    filename = self.logfile,
-                    comp = self.compression,
-                    fpos = self.bufseek,
-                    data = '')
-            self.ccpublish (msg, buf)
+            data = ''
+            blob = buf
         else:
-            msg = LogtailMessage(
-                    filename = self.logfile,
-                    comp = self.compression,
-                    fpos = self.bufseek,
-                    data = buf.encode('base64'))
-            self.ccpublish (msg)
+            data = buf.encode('base64')
+            blob = None
+        msg = LogtailMessage(
+                filename = self.logfile,
+                comp = self.compression,
+                fpos = self.bufseek,
+                data = data,
+                op_mode = self.op_mode,
+                st_dev = self.logf_dev,
+                st_ino = self.logf_ino)
+        self.ccpublish (msg, blob)
         elapsed = time.time() - start
         self.log.debug ("sent %i bytes in %f s", len(buf), elapsed)
         self.stat_inc ('duration', elapsed) # json/base64/compress time, actual send happens async

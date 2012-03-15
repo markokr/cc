@@ -1,3 +1,4 @@
+import datetime
 import os
 import time
 
@@ -16,6 +17,7 @@ CC_HANDLER = 'TailWriter'
 #
 
 BUF_MINBYTES = 64 * 1024
+DATETIME_SUFFIX = ".%Y-%m-%d_%H-%M-%S"
 
 comp_ext = {
     'gzip': '.gz',
@@ -61,12 +63,21 @@ class TailWriter (CCHandler):
         mode = data['mode']
         host = data['hostname']
         fn = os.path.basename (data['filename'])
+        try:
+            op_mode = getattr (data, 'op_mode', None)
+            st_dev = getattr (data, 'st_dev', None)
+            st_ino = getattr (data, 'st_ino', None)
+        except KeyError: # due to broken Struct :-/
+            op_mode = st_dev = st_ino = None
 
         # sanitize
         host = host.replace ('/', '_')
         if mode not in ['', 'b']:
             self.log.warning ("unsupported fopen mode ('%s'), ignoring it", mode)
             mode = 'b'
+        if op_mode not in [None, '', 'classic', 'rotated']:
+            self.log.warning ("unsupported operation mode ('%s'), ignoring it", op_mode)
+            op_mode = None
 
         # add file ext if needed
         if self.write_compressed == 'keep':
@@ -76,11 +87,14 @@ class TailWriter (CCHandler):
             fn += comp_ext[self.compression]
 
         # Cache open files
-        fi = (host, fn)
+        fi = (host, st_dev, st_ino, fn)
         if fi in self.files:
             fd = self.files[fi]
             if mode != fd['mode']:
                 self.log.error ("fopen mode mismatch (%s -> %s)", mode, fd['mode'])
+                return
+            if op_mode != fd['op_mode']:
+                self.log.error ("operation mode mismatch (%s -> %s)", op_mode, fd['op_mode'])
                 return
         else:
             # decide destination file
@@ -91,6 +105,9 @@ class TailWriter (CCHandler):
                     os.mkdir (subdir)
             else:
                 dstfn = os.path.join (self.dstdir, '%s--%s' % (host, fn))
+            if op_mode == 'rotated':
+                dt = datetime.datetime.today()
+                dstfn += dt.strftime (DATETIME_SUFFIX)
 
             fobj = open (dstfn, 'a' + mode)
             self.log.info ('opened %s', dstfn)
@@ -98,7 +115,7 @@ class TailWriter (CCHandler):
             now = time.time()
             fd = { 'obj': fobj, 'mode': mode, 'path': dstfn,
                    'wtime': now, 'ftime': now, 'buf': [], 'bufsize': 0,
-                   'offset': 0 }
+                   'offset': 0, 'op_mode': op_mode }
             self.files[fi] = fd
 
         raw = cmsg.get_part3() # blob

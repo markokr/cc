@@ -47,6 +47,9 @@ class LogtailMessage (BaseMessage):
     comp = Field(str)                   # compression method used
     mode = Field(str, 'b')              # file mode to use for fopen
     fpos = Field(int)
+    op_mode = Field(str)                # classic, rotated
+    st_dev = Field(long)                # device number
+    st_ino = Field(int)                 # inode number
 
 class JobConfigRequestMessage(BaseMessage):
     req = Field(str, "job.config")
