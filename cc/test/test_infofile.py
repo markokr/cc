@@ -45,7 +45,6 @@ class TestInfofile(CCTestCase):
 
         [h:jobmgr]
         handler = cc.handler.jobmgr
-        pidfiledir = TMP
         daemons = d:infosender, d:infoscript
 
         [d:infosender]
@@ -70,7 +69,7 @@ class TestInfofile(CCTestCase):
         dir2 = os.path.join(TMPDIR, 'dst-infofile')
         os.system('rm -rf ' + dir1)
         os.system('rm -rf ' + dir2)
-        os.system('mkdir -p %s %s' % (dir1, dir2)) 
+        os.system('mkdir -p %s %s' % (dir1, dir2))
 
         CCTestCase.setUp(self)
 
@@ -91,4 +90,3 @@ class TestInfofile(CCTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

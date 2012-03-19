@@ -73,19 +73,17 @@ class InfofileCollector(CCDaemon):
         cfb = cc.util.compress (body, self.compression, {'level': self.compression_level})
         self.log.debug ("file compressed from %i to %i", len(body), len(cfb))
         if self.use_blob:
-            msg = InfofileMessage(
-                    filename = os.path.basename(fs.filename),
-                    mtime = fs.filestat.st_mtime,
-                    comp = self.compression,
-                    data = '')
-            self.ccpublish (msg, cfb)
+            data = ''
+            blob = cfb
         else:
-            msg = InfofileMessage(
-                    filename = os.path.basename(fs.filename),
-                    mtime = fs.filestat.st_mtime,
-                    comp = self.compression,
-                    data = cfb.encode('base64'))
-            self.ccpublish (msg)
+            data = cfb.encode('base64')
+            blob = None
+        msg = InfofileMessage(
+                filename = fs.filename,
+                mtime = fs.filestat.st_mtime,
+                comp = self.compression,
+                data = data)
+        self.ccpublish (msg, blob)
 
     def find_new(self):
         fnlist = glob.glob (os.path.join (self.infodir, self.infomask))

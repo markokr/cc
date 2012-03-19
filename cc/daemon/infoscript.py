@@ -72,19 +72,17 @@ class InfoScript(CCDaemon):
         self.log.debug ("output compressed from %i to %i", len(res), len(body))
 
         if self.use_blob:
-            msg = InfofileMessage(
-                    filename = self.info_name,
-                    mtime = time.time(),
-                    comp = self.compression,
-                    data = '')
-            self.ccpublish (msg, body)
+            data = ''
+            blob = body
         else:
-            msg = InfofileMessage(
-                    filename = self.info_name,
-                    mtime = time.time(),
-                    comp = self.compression,
-                    data = body.encode('base64'))
-            self.ccpublish (msg)
+            data = body.encode('base64')
+            blob = None
+        msg = InfofileMessage(
+                filename = self.info_name,
+                mtime = time.time(),
+                comp = self.compression,
+                data = data)
+        self.ccpublish (msg, blob)
 
         self.stat_inc('infoscript.bytes', len(res))
         self.stat_inc('infoscript.count')

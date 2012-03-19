@@ -220,6 +220,7 @@ class TaskRunner(CCDaemon):
         """Register taskrunner in central router."""
         self.log.info('Registering as "%s"', self.local_id)
         msg = TaskRegisterMessage (host = self.local_id)
+        self.log.debug ('msg: %r', msg)
         self.ccpublish (msg)
 
     def do_maint (self):

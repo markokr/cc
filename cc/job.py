@@ -147,7 +147,3 @@ class CCJob(skytools.DBScript):
         if self.zctx:
             self.zctx.term()
             self.zctx = None
-
-    def stat_inc(self, key, increase = 1):
-        return self.stat_increase (key, increase)
-

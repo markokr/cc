@@ -39,7 +39,7 @@ class CCServer(skytools.BaseScript):
         ## Parameters for CCServer ##
 
         # listening socket for this CC instance
-        cc-socket = tcp://127.0.0.1:10000
+        cc-socket = tcp://127.0.0.1:22632
 
         # zmq customization:
         #zmq_nthreads = 1

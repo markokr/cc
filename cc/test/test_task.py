@@ -31,7 +31,6 @@ class TestTasks(CCTestCase):
 
         [h:jobmgr]
         handler = cc.handler.jobmgr
-        pidfiledir = TMP
         daemons = d:taskrunner
 
         [d:taskrunner]
@@ -98,4 +97,3 @@ class TestTasks(CCTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
