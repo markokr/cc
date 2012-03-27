@@ -48,6 +48,7 @@ class InfoScript(CCDaemon):
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
+        self.msg_suffix = self.cf.get ('msg-suffix', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
         self.timer = StrictPeriod(self.run_info_script, self.info_period*1000, self.ioloop)
@@ -82,6 +83,8 @@ class InfoScript(CCDaemon):
                 mtime = time.time(),
                 comp = self.compression,
                 data = data)
+        if self.msg_suffix:
+            msg.req += '.' + self.msg_suffix
         self.ccpublish (msg, blob)
 
         self.stat_inc('infoscript.bytes', len(res))

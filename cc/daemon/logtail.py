@@ -59,6 +59,7 @@ class LogfileTailer (CCDaemon):
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
+        self.msg_suffix = self.cf.get ('msg-suffix', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
         self.lag_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('lag-max-bytes', '0'))
 
@@ -276,6 +277,8 @@ class LogfileTailer (CCDaemon):
                 op_mode = self.op_mode,
                 st_dev = self.logf_dev,
                 st_ino = self.logf_ino)
+        if self.msg_suffix:
+            msg.req += '.' + self.msg_suffix
         self.ccpublish (msg, blob)
         elapsed = time.time() - start
         self.log.debug ("sent %i bytes in %f s", len(buf), elapsed)

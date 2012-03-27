@@ -48,6 +48,7 @@ class InfofileCollector(CCDaemon):
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
+        self.msg_suffix = self.cf.get ('msg-suffix', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
     def startup(self):
@@ -83,6 +84,8 @@ class InfofileCollector(CCDaemon):
                 mtime = fs.filestat.st_mtime,
                 comp = self.compression,
                 data = data)
+        if self.msg_suffix:
+            msg.req += '.' + self.msg_suffix
         self.ccpublish (msg, blob)
 
     def find_new(self):
