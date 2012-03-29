@@ -6,14 +6,15 @@
 import glob
 import os, os.path
 import sys
+import threading
 
 import skytools
 
 import cc.util
-
 from cc import json
 from cc.daemon import CCDaemon
 from cc.reqs import InfofileMessage
+
 
 class InfoStamp:
     def __init__(self, fn, st):
@@ -35,6 +36,7 @@ class InfoStamp:
         else:
             return 0
 
+
 class InfofileCollector(CCDaemon):
 
     log = skytools.getLogger('d:InfofileCollector')
@@ -48,6 +50,7 @@ class InfofileCollector(CCDaemon):
         if self.compression not in (None, '', 'none', 'gzip', 'bzip2'):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
+        self.maint_period = self.cf.getint ('maint-period', 60 * 60)
         self.msg_suffix = self.cf.get ('msg-suffix', '')
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
@@ -56,6 +59,9 @@ class InfofileCollector(CCDaemon):
 
         # fn -> stamp
         self.infomap = {}
+
+        # activate periodic maintenance
+        self.do_maint()
 
     def process_file(self, fs):
         f = open(fs.filename, 'rb')
@@ -115,6 +121,24 @@ class InfofileCollector(CCDaemon):
             except (OSError, IOError), e:
                 self.log.info('%s: %s', fs.filename, e)
         self.stat_inc('changes', len(newlist))
+
+    def stop (self):
+        """ Called from signal handler """
+        super(InfofileCollector, self).stop()
+        self.log.info ("stopping")
+        self.maint_timer.cancel()
+
+    def do_maint (self):
+        """ Drop removed files from our cache """
+        self.log.debug ("cleanup")
+        fnlist = glob.glob (os.path.join (self.infodir, self.infomask))
+        gone = set(self.infomap) - set(fnlist)
+        for fn in gone:
+            self.log.info ("forgetting file %s", fn)
+            del self.infomap[fn]
+        self.maint_timer = threading.Timer (self.maint_period, self.do_maint)
+        self.maint_timer.start()
+
 
 if __name__ == '__main__':
     s = InfofileCollector('infofile_collector', sys.argv[1:])
