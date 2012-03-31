@@ -1,5 +1,10 @@
 
-__all__ = ['CCMessage']
+__all__ = ['CCMessage', 'assert_msg_req', 'is_msg_req_valid', 'zmsg_size']
+
+import re
+
+MSG_DST_VALID = re.compile (r'^[a-zA-Z0-9_-]+(?:[.][a-zA-Z0-9_-]+)*$')
+
 
 class CCMessage(object):
     """CC multipart message.
@@ -24,6 +29,7 @@ class CCMessage(object):
         self.rpos = zmsg.index('')
         self.parsed = None
         self.signature = None
+        assert_msg_req (self.get_dest())
 
     def get_route(self):
         """Route parts"""
@@ -92,6 +98,12 @@ class CCMessage(object):
     def send_to (self, sock):
         sock.send_multipart (self.zmsg)
 
+
+def assert_msg_req (dest):
+    assert MSG_DST_VALID.match (dest) , "invalid msg dest: %r" % dest
+
+def is_msg_req_valid (dest):
+    return (MSG_DST_VALID.match (dest) is not None)
 
 def zmsg_size (zmsg):
     n = 0

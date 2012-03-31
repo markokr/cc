@@ -46,13 +46,15 @@ def make_job_defaults(main_cf, job_service_name):
         defs['pidfile'] = main_cf.cf.get('ccserver', 'pidfile', raw=True)
     return defs
 
+
 class CCJob(skytools.DBScript):
     zctx = None
     cc = None
     cc_url = None
 
     zmq_nthreads = 1
-    zmq_hwm = 1000
+    zmq_linger = 500
+    zmq_hwm = 100
 
     def __init__(self, service_type, args):
         # no crypto for logs
@@ -136,7 +138,7 @@ class CCJob(skytools.DBScript):
             url = self.cc_url
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.connect(url)
-            self.cc.setsockopt(zmq.LINGER, 500)
+            self.cc.setsockopt(zmq.LINGER, self.zmq_linger)
             self.cc.setsockopt(zmq.HWM, self.zmq_hwm)
         return self.cc
 

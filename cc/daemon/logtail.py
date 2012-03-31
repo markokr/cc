@@ -28,6 +28,7 @@ import skytools
 
 import cc.util
 from cc.daemon import CCDaemon
+from cc.message import is_msg_req_valid
 from cc.reqs import LogtailMessage
 
 
@@ -60,6 +61,9 @@ class LogfileTailer (CCDaemon):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
         self.msg_suffix = self.cf.get ('msg-suffix', '')
+        if self.msg_suffix and not is_msg_req_valid (self.msg_suffix):
+            self.log.error ("invalid msg-suffix: %s", self.msg_suffix)
+            self.msg_suffix = None
         self.use_blob = self.cf.getboolean ('use-blob', False)
         self.lag_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('lag-max-bytes', '0'))
 

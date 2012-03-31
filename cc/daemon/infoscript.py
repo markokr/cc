@@ -13,6 +13,7 @@ from zmq.eventloop.ioloop import PeriodicCallback, IOLoop
 
 import cc.util
 from cc.daemon import CCDaemon
+from cc.message import is_msg_req_valid
 from cc.reqs import InfofileMessage
 
 
@@ -49,6 +50,9 @@ class InfoScript(CCDaemon):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
         self.msg_suffix = self.cf.get ('msg-suffix', '')
+        if self.msg_suffix and not is_msg_req_valid (self.msg_suffix):
+            self.log.error ("invalid msg-suffix: %s", self.msg_suffix)
+            self.msg_suffix = None
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
         self.timer = StrictPeriod(self.run_info_script, self.info_period*1000, self.ioloop)

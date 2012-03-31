@@ -13,6 +13,7 @@ import skytools
 import cc.util
 from cc import json
 from cc.daemon import CCDaemon
+from cc.message import is_msg_req_valid
 from cc.reqs import InfofileMessage
 
 
@@ -21,7 +22,6 @@ class InfoStamp:
         self.filename = fn
         self.filestat = st
         self.modified = 1
-        self.checked = 0
 
     def check_send(self, st):
         if (st.st_mtime != self.filestat.st_mtime
@@ -52,6 +52,9 @@ class InfofileCollector(CCDaemon):
         self.compression_level = self.cf.getint ('compression-level', '')
         self.maint_period = self.cf.getint ('maint-period', 60 * 60)
         self.msg_suffix = self.cf.get ('msg-suffix', '')
+        if self.msg_suffix and not is_msg_req_valid (self.msg_suffix):
+            self.log.error ("invalid msg-suffix: %s", self.msg_suffix)
+            self.msg_suffix = None
         self.use_blob = self.cf.getboolean ('use-blob', False)
 
     def startup(self):
@@ -131,9 +134,9 @@ class InfofileCollector(CCDaemon):
     def do_maint (self):
         """ Drop removed files from our cache """
         self.log.debug ("cleanup")
-        fnlist = glob.glob (os.path.join (self.infodir, self.infomask))
-        gone = set(self.infomap) - set(fnlist)
-        for fn in gone:
+        current = glob.glob (os.path.join (self.infodir, self.infomask))
+        removed = set(self.infomap) - set(current)
+        for fn in removed:
             self.log.info ("forgetting file %s", fn)
             del self.infomap[fn]
         self.maint_timer = threading.Timer (self.maint_period, self.do_maint)
