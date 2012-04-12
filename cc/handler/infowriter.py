@@ -1,16 +1,20 @@
 import os, os.path
+import threading
 
 import skytools
+import zmq
 
 import cc.util
 from cc.handler import CCHandler
+from cc.handler.proxy import ProxyHandler
+from cc.message import CCMessage
 
 __all__ = ['InfoWriter']
 
 CC_HANDLER = 'InfoWriter'
 
 #
-# infofile writer
+# infofile writer master
 #
 
 comp_ext = {
@@ -18,29 +22,104 @@ comp_ext = {
     'bzip2': '.bz2',
     }
 
-class InfoWriter(CCHandler):
-    """Simply writes to files."""
+class InfoWriter (ProxyHandler):
+    """ Simply writes to files (with help from workers) """
 
     CC_ROLES = ['remote']
 
     log = skytools.getLogger('h:InfoWriter')
 
-    def __init__(self, hname, hcf, ccscript):
-        super(InfoWriter, self).__init__(hname, hcf, ccscript)
+    def startup (self):
+        super(InfoWriter, self).startup()
 
-        self.dstdir = hcf.getfile('dstdir')
-        self.host_subdirs = hcf.getboolean('host-subdirs', 0)
-        self.bakext = hcf.get('bakext', '')
-        self.write_compressed = hcf.get ('write-compressed', '')
-        assert self.write_compressed in [None, '', 'no', 'keep', 'yes']
-        if self.write_compressed == 'yes':
-            self.compression = self.cf.get ('compression', '')
-            if self.compression not in ('gzip', 'bzip2'):
-                self.log.error ("unsupported compression: %s", self.compression)
-            self.compression_level = self.cf.getint ('compression-level', '')
+        self.workers = []
+        self.wparams = {} # passed to workers
 
-    def handle_msg(self, cmsg):
-        """ Got message from client, process it. """
+        self.wparams['dstdir'] = self.cf.getfile ('dstdir')
+        self.wparams['host_subdirs'] = self.cf.getbool ('host-subdirs', 0)
+        self.wparams['bakext'] = self.cf.get ('bakext', '')
+        self.wparams['write_compressed'] = self.cf.get ('write-compressed', '')
+        assert self.wparams['write_compressed'] in [None, '', 'no', 'keep', 'yes']
+        if self.wparams['write_compressed'] == 'yes':
+            self.wparams['compression'] = self.cf.get ('compression', '')
+            if self.wparams['compression'] not in ('gzip', 'bzip2'):
+                self.log.error ("unsupported compression: %s", self.wparams['compression'])
+            self.wparams['compression_level'] = self.cf.getint ('compression-level', '')
+
+    def make_socket (self):
+        """ Create socket for sending msgs to workers. """
+        url = 'inproc://workers'
+        sock = self.zctx.socket (zmq.XREQ)
+        port = sock.bind_to_random_port (url)
+        self.worker_url = "%s:%d" % (url, port)
+        return sock
+
+    def launch_workers (self):
+        """ Create and start worker threads. """
+        nw = self.cf.getint ('worker-threads', 10)
+        for i in range (nw):
+            wname = "%s.worker-%i" % (self.hname, i)
+            self.log.info ("starting %s", wname)
+            w = InfoWriter_Worker (wname, self.xtx, self.zctx, self.worker_url, self.wparams)
+            w.stat_inc = self.stat_inc # XXX
+            self.workers.append (w)
+            w.start()
+
+    def stop (self):
+        """ Signal workers to shut down. """
+        self.log.info ('stopping')
+        for w in self.workers:
+            self.log.info ("signalling %s", w.name)
+            w.stop()
+
+#
+# infofile writer worker
+#
+
+class InfoWriter_Worker (threading.Thread):
+    """ Simply writes to files. """
+
+    log = skytools.getLogger ('h:InfoWriter_Worker')
+
+    def __init__ (self, name, xtx, zctx, url, params = {}):
+        super(InfoWriter_Worker, self).__init__(name=name)
+
+        self.log = skytools.getLogger ('h:InfoWriter_Worker' + name[name.rfind('-'):])
+        #self.log = skytools.getLogger (self.log.name + name[name.rfind('-'):])
+        #self.log = skytools.getLogger (name)
+
+        self.xtx = xtx
+        self.zctx = zctx
+        self.master_url = url
+
+        for k, v in params.items():
+            self.log.trace ("setattr: %s -> %r", k, v)
+            setattr (self, k, v)
+
+        self.looping = True
+
+    def run (self):
+        self.log.info ("%s running", self.name)
+        self.master = self.zctx.socket (zmq.XREP)
+        self.master.connect (self.master_url)
+        while self.looping:
+            try:
+                self.work()
+            except:
+                self.log.exception ("worker crashed, dropping msg")
+        self.shutdown()
+
+    def work (self):
+        zmsg = self.master.recv_multipart()
+        try:
+            cmsg = CCMessage (zmsg)
+        except:
+            self.log.exception ("invalid CC message")
+        else:
+            self.handle_msg (cmsg)
+
+    def handle_msg (self, cmsg):
+        """ Got message from master, process it. """
 
         data = cmsg.get_payload(self.xtx)
         if not data: return
@@ -53,7 +132,7 @@ class InfoWriter(CCHandler):
         # sanitize
         host = host.replace('/', '_')
         if mode not in ['', 'b']:
-            self.log.warning ("unsupported fopen mode ('%s'), ignoring it", mode)
+            self.log.warning ("unsupported fopen mode (%r), ignoring it", mode)
             mode = 'b'
 
         # add file ext if needed
@@ -111,3 +190,9 @@ class InfoWriter(CCHandler):
 
         self.stat_inc ('written_bytes', len(body))
         self.stat_inc ('written_files')
+
+    def stop (self):
+        self.looping = False
+
+    def shutdown (self):
+        self.log.info ("%s stopping", self.name)

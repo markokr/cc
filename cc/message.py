@@ -62,14 +62,17 @@ class CCMessage(object):
     def get_size(self):
         return zmsg_size (self.zmsg)
 
-    def __str__(self):
-        x = repr(self.zmsg)
-        if len(x) > 200:
-            x = x[:200] + ' ...'
-        return 'CCMessage%s' % x
-
     def __repr__(self):
-        return self.__str__()
+        x = repr(self.zmsg)
+        if len(x) > 300:
+            x = x[:300] + '...'
+        return 'CCMessage(%s)' % x
+
+    def __str__(self):
+        x = repr(self.get_non_route())
+        if len(x) > 300:
+            x = x[:300] + '...'
+        return 'CCMessage(%s)' % x
 
     def set_route (self, route):
         """Fill local route with another route."""

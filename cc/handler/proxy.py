@@ -28,7 +28,11 @@ class ProxyHandler(CCHandler):
         self.stream = CCStream(s, ccscript.ioloop)
         self.stream.on_recv(self.on_recv)
 
+        self.startup()
         self.launch_workers()
+
+    def startup(self):
+        pass
 
     def launch_workers(self):
         pass
