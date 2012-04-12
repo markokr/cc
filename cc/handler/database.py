@@ -13,12 +13,8 @@ import zmq
 
 from cc.handler.proxy import ProxyHandler
 from cc.message import CCMessage
-from cc.handler import CCHandler
-from cc.stream import CCStream
-from cc.job import CallbackLogger
 from cc.reqs import parse_json
-from cc.crypto import CryptoContext
-
+from cc.stream import CCStream
 
 __all__ = ['DBHandler']
 
@@ -33,20 +29,21 @@ class DBWorker(threading.Thread):
 
     log = skytools.getLogger('h:DBWorker')
 
-    def __init__(self, name, zctx, worker_url, connstr, func_list, xtx):
+    def __init__(self, name, xtx, zctx, url, connstr, func_list):
         super(DBWorker, self).__init__(name=name)
-        self.zctx = zctx
-        self.worker_url = worker_url
-        self.connstr = connstr
-        self.db = None
-        self.wconn = None
-        self.func_list = func_list
+        self.log = skytools.getLogger (name)
         self.xtx = xtx
+        self.zctx = zctx
+        self.master_url = url
+        self.connstr = connstr
+        self.func_list = func_list
+        self.db = None
+        self.master = None
 
     def run(self):
-        self.log.debug('worker running')
-        self.wconn = self.zctx.socket(zmq.XREP)
-        self.wconn.connect(self.worker_url)
+        self.log.debug ('%s running', self.name)
+        self.master = self.zctx.socket (zmq.XREP)
+        self.master.connect (self.master_url)
         while 1:
             try:
                 self.work()
@@ -64,9 +61,13 @@ class DBWorker(threading.Thread):
             pass
 
     def work(self):
-        zmsg = self.wconn.recv_multipart()
-        cmsg = CCMessage(zmsg)
-        self.log.debug('DBWorker: msg=%r', cmsg)
+        zmsg = self.master.recv_multipart()
+        try:
+            cmsg = CCMessage (zmsg)
+            self.log.trace ('%s', cmsg)
+        except:
+            self.log.exception ("invalid CC message")
+            return
 
         if not self.db:
             self.log.info('connecting to database')
@@ -80,9 +81,9 @@ class DBWorker(threading.Thread):
         if not msg:
             return
         curs = self.db.cursor()
-        js = cmsg.get_payload_json()
-
         func = msg.function
+        args = msg.get('payload','{}')
+        js = args.dump_json()
 
         if len(self.func_list) == 1 and self.func_list[0] == '*':
             pass
@@ -93,19 +94,21 @@ class DBWorker(threading.Thread):
             return None
 
         q = "select %s(%%s)" % skytools.quote_fqident(func)
-        self.log.debug('Executing: %s', q)
+        if self.log.isEnabledFor (skytools.skylog.TRACE):
+            self.log.trace ('Executing: %s', curs.mogrify (q, [js]))
+        else:
+            self.log.debug ('Executing: %s', q)
         curs.execute(q, [js])
 
         res = curs.fetchall()
         if not res:
-            js2 = '{}'
+            jsr = '{}'
         else:
-            js2 = res[0][0]
-        jmsg = parse_json(js2)
-        cmsg2 = CCMessage(jmsg = jmsg)
-        cmsg2.take_route(cmsg)
-        cmsg2.send_to (self.wconn)
-
+            jsr = res[0][0]
+        jmsg = parse_json(jsr)
+        rcm = self.xtx.create_cmsg (jmsg)
+        rcm.take_route (cmsg)
+        rcm.send_to (self.master)
 
 #
 # db proxy
@@ -118,21 +121,24 @@ class DBHandler(ProxyHandler):
 
     log = skytools.getLogger('h:DBHandler')
 
-    def make_socket(self):
-        baseurl = 'tcp://127.0.0.1'
-        s = self.zctx.socket(zmq.XREQ)
-        port = s.bind_to_random_port('tcp://127.0.0.1')
-        self.worker_url = "%s:%d" % (baseurl, port)
-        return s
+    def make_socket (self):
+        """ Create socket for sending msgs to workers. """
+        url = 'tcp://127.0.0.1' # 'inproc://workers'
+        sock = self.zctx.socket (zmq.XREQ)
+        port = sock.bind_to_random_port (url)
+        self.worker_url = "%s:%d" % (url, port)
+        return sock
 
     def launch_workers(self):
+        """ Create and start worker threads. """
         nworkers = self.cf.getint('worker-threads', 10)
         func_list = self.cf.getlist('allowed-functions', [])
         self.log.info('allowed-functions: %r', func_list)
         connstr = self.cf.get('db')
         for i in range(nworkers):
-            wname = '.worker%d' % i
-            self.log.info('launching: %s.%s', self.hname, wname)
-            w = DBWorker(self.hname + '.' + wname, self.zctx, self.worker_url,
-                         connstr, func_list, self.xtx)
+            wname = "%s.worker-%i" % (self.hname, i)
+            self.log.info ('starting %s', wname)
+            w = DBWorker(
+                    wname, self.xtx, self.zctx, self.worker_url,
+                    connstr, func_list)
             w.start()

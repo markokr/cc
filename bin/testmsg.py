@@ -42,7 +42,8 @@ elif typ == 'log':
     msg = {'req': 'log.info', 'time': now, 'log_time': now, 'hostname': 'host', 'job_name': 'job', 'log_level': 'INFO', 'log_msg': 'Foo'}
     need_answer = False
 elif typ == 'db':
-    msg = {'req': 'confdb', 'time': now, 'host': 'hostname', 'function': 'public.test_json'}
+    msg = {'req': 'db.confdb', 'time': now, 'hostname': 'hostname', 'function': 'public.test_json'}
+    msg = {'req': 'db.testdb', 'time': now, 'hostname': 'hostname', 'function': 'hots.apiwrapper', 'payload': {'req': 'tralala'}}
 elif typ == 'job':
     msg = {'req': 'job.config', 'time': now}
     msg = {'req': 'job.config', 'time': now, 'job_name': 'qwerty'}
@@ -77,4 +78,3 @@ if typ[:4] == 'task':
             break
 
 sys.exit(0)
-
