@@ -26,7 +26,9 @@ case "$1" in
 			$USER
         if grep ^$INGROUP: /etc/group > /dev/null 2>&1 ; then
             # group exists, add user to group
-            usermod -a $USER -G $INGROUP
+	    echo adding $USER to group $INGROUP
+            #usermod -a $USER -G $INGROUP
+            gpasswd -a $USER $INGROUP
         fi
 	fi
 
