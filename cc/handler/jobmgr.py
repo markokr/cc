@@ -1,4 +1,5 @@
 
+import sys
 import os
 import signal
 import subprocess
@@ -79,7 +80,7 @@ class JobState:
         mod = self.jcf.get('module', '')
         script = self.jcf.get('script', '')
         cls = self.jcf.get('class', '')
-        args = [self.jcf.filename, self.jname, '-d']
+        args = [self.jcf.filename, self.jname]
         args.extend (args_extra)
         if mod:
             cmd = ['python', '-m', mod] + args
@@ -89,12 +90,17 @@ class JobState:
             raise skytools.UsageError('JobState.start: dunno how to launch class')
 
         self.log.info('Launching %s: %s', self.jname, " ".join(cmd))
-        self.proc = subprocess.Popen(cmd, close_fds = True,
+        if sys.platform == 'win32':
+            p = subprocess.Popen(cmd, close_fds = True)
+            self.proc = None
+        else:
+            cmd.append('-d')
+            p = subprocess.Popen(cmd, close_fds = True,
                                 stdin = open(os.devnull, 'rb'),
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.STDOUT)
-
-        skytools.set_nonblocking(self.proc.stdout, True)
+            skytools.set_nonblocking(p.stdout, True)
+            self.proc = p
 
         self.start_count += 1
         self.start_time = time.time()
