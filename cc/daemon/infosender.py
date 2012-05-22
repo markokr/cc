@@ -89,7 +89,7 @@ class InfofileCollector(CCDaemon):
             data = cfb.encode('base64')
             blob = None
         msg = InfofileMessage(
-                filename = fs.filename,
+                filename = fs.filename.replace('\\', '/'),
                 mtime = fs.filestat.st_mtime,
                 comp = self.compression,
                 data = data)
