@@ -83,7 +83,7 @@ class InfoScript(CCDaemon):
             data = body.encode('base64')
             blob = None
         msg = InfofileMessage(
-                filename = self.info_name,
+                filename = self.info_name.replace('\\', '/'),
                 mtime = time.time(),
                 comp = self.compression,
                 data = data)
