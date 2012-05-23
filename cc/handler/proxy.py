@@ -37,6 +37,8 @@ class ProxyHandler(CCHandler):
         zurl = self.cf.get('remote-cc')
         s = self.zctx.socket(zmq.XREQ)
         s.setsockopt(zmq.LINGER, 500)
+        """ TODO: fix hardcoded zmq.HWM """ 
+        s.setsockopt(zmq.HWM, 50)
         s.connect(zurl)
         return s
 

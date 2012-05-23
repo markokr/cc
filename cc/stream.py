@@ -93,8 +93,10 @@ class CCReqStream:
         ioloop = ioloop or IOLoop.instance()
 
         s = zctx.socket(zmq.XREQ)
-        s.connect(cc_url)
         s.setsockopt(zmq.LINGER, 500)
+        """ TODO: fix hardcoded zmq.HWM """ 
+        s.setsockopt(zmq.HWM, 100)
+        s.connect(cc_url)
 
         self.ccs = CCStream(s, ioloop)
         self.ioloop = ioloop

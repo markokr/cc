@@ -104,9 +104,9 @@ class CCServer(skytools.BaseScript):
 
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
-        s.bind(self.local_url)
         s.setsockopt(zmq.LINGER, self.zmq_linger)
         s.setsockopt(zmq.HWM, self.zmq_hwm)
+        s.bind(self.local_url)
         self.local = CCStream(s, self.ioloop)
         self.local.on_recv(self.handle_cc_recv)
 
