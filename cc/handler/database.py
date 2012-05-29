@@ -46,8 +46,6 @@ class DBWorker(threading.Thread):
     def run(self):
         self.log.debug('worker running')
         self.wconn = self.zctx.socket(zmq.XREP)
-        """ TODO: fix hardcoded zmq.HWM """        
-        self.wconn.setsockopt(zmq.HWM, 50)
         self.wconn.connect(self.worker_url)
         while 1:
             try:
