@@ -25,8 +25,7 @@ class InfoStamp:
 
     def check_send(self, st):
         if (st.st_mtime != self.filestat.st_mtime
-                or st.st_size != self.filestat.st_size
-                or st.st_size == 0):
+                or st.st_size != self.filestat.st_size):
             # st changed, new mod
             self.modified = 1
             self.filestat = st
