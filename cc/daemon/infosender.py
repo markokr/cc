@@ -7,6 +7,7 @@ import glob
 import os, os.path
 import sys
 import threading
+import time
 
 import skytools
 
@@ -50,6 +51,7 @@ class InfofileCollector(CCDaemon):
             self.log.error ("unknown compression: %s", self.compression)
         self.compression_level = self.cf.getint ('compression-level', '')
         self.maint_period = self.cf.getint ('maint-period', 60 * 60)
+        self.stats_period = self.cf.getint ('stats-period', 30)
         self.msg_suffix = self.cf.get ('msg-suffix', '')
         if self.msg_suffix and not is_msg_req_valid (self.msg_suffix):
             self.log.error ("invalid msg-suffix: %s", self.msg_suffix)
@@ -114,7 +116,7 @@ class InfofileCollector(CCDaemon):
                     newlist.append(old)
         return newlist
 
-    def work(self):
+    def _work (self):
         self.connect_cc()
         newlist = self.find_new()
         for fs in newlist:
@@ -123,6 +125,13 @@ class InfofileCollector(CCDaemon):
             except (OSError, IOError), e:
                 self.log.info('%s: %s', fs.filename, e)
         self.stat_inc('changes', len(newlist))
+
+    def work (self):
+        t = time.time()
+        while self.stats_period > time.time() - t:
+            self._work()
+            self.sleep(1)
+        return 1
 
     def stop (self):
         """ Called from signal handler """
