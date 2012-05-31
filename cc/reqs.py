@@ -21,6 +21,16 @@ class ErrorMessage (ReplyMessage):
     req = Field(str, "error")
     msg = Field(str)
 
+class EchoRequestMessage (BaseMessage):
+    req = Field(str, "echo.request")
+    target = Field(str)
+
+class EchoResponseMessage (BaseMessage):
+    req = Field(str, "echo.response")
+    orig_hostname = Field(str)
+    orig_target = Field(str)
+    orig_time = Field(float)
+
 class LogMessage(BaseMessage):
     "log.*"
     log_level = Field(str)
