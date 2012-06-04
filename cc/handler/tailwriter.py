@@ -41,12 +41,14 @@ class TailWriter (CCHandler):
 
         self.write_compressed = self.cf.get ('write-compressed', '')
         assert self.write_compressed in [None, '', 'no', 'keep', 'yes']
+        if self.write_compressed in ('keep', 'yes'):
+            self.log.info ("position checking not supported for compressed files")
         if self.write_compressed == 'yes':
             self.compression = self.cf.get ('compression', '')
             if self.compression not in ('gzip', 'bzip2'):
                 self.log.error ("unsupported compression: %s", self.compression)
             self.compression_level = self.cf.getint ('compression-level', '')
-            self.buf_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', 1024 * 1024))
+            self.buf_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', '1 MB'))
             if self.buf_maxbytes < BUF_MINBYTES:
                 self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.buf_maxbytes, BUF_MINBYTES)
                 self.buf_maxbytes = BUF_MINBYTES
@@ -141,7 +143,8 @@ class TailWriter (CCHandler):
             else:
                 body = raw
 
-        if hasattr (data, 'fpos'):
+        if hasattr (data, 'fpos') and (self.write_compressed in [None, '', 'no']
+                or (self.write_compressed == 'keep' and data['comp'] in [None, '', 'none'])):
             fpos = fd['obj'].tell()
             if data['fpos'] != fpos + fd['offset']:
                 self.log.warning ("sync lost: %i -> %i", fpos, data['fpos'])
