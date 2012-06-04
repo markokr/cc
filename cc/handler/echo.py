@@ -109,8 +109,10 @@ class Echo (CCHandler):
         rtt = echo.time_pong - msg.orig_time
         if msg.orig_time == echo.time_ping:
             self.log.trace ("echo time: %f s", rtt)
-        else: # rtt > self.ping_tick:
+        elif rtt <= 5 * self.ping_tick:
             self.log.debug ("late pong: %f s", rtt)
+        else:
+            self.log.info ("too late pong: %f s", rtt)
 
     def send_request (self, url):
         """ Send ping to remote CC. """
