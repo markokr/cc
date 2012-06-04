@@ -71,12 +71,14 @@ class TailWriter (CCHandler):
         self.wparams['maint_period'] = self.cf.getint ('maint-period', 3)
         self.wparams['write_compressed'] = self.cf.get ('write-compressed', '')
         assert self.wparams['write_compressed'] in [None, '', 'no', 'keep', 'yes']
+        if self.wparams['write_compressed'] in ('keep', 'yes'):
+            self.log.info ("position checking not supported for compressed files")
         if self.wparams['write_compressed'] == 'yes':
             self.wparams['compression'] = self.cf.get ('compression', '')
             if self.wparams['compression'] not in ('gzip', 'bzip2'):
                 self.log.error ("unsupported compression: %s", self.wparams['compression'])
             self.wparams['compression_level'] = self.cf.getint ('compression-level', '')
-            self.wparams['buf_maxbytes'] = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', 1024 * 1024))
+            self.wparams['buf_maxbytes'] = cc.util.hsize_to_bytes (self.cf.get ('buffer-bytes', '1 MB'))
             if self.wparams['buf_maxbytes'] < BUF_MINBYTES:
                 self.log.info ("buffer-bytes too low, adjusting: %i -> %i", self.wparams['buf_maxbytes'], BUF_MINBYTES)
                 self.wparams['buf_maxbytes'] = BUF_MINBYTES
@@ -336,7 +338,8 @@ class TailWriter_Worker (threading.Thread):
             else:
                 body = raw
 
-        if hasattr (data, 'fpos'):
+        if hasattr (data, 'fpos') and (self.write_compressed in [None, '', 'no']
+                or (self.write_compressed == 'keep' and data['comp'] in [None, '', 'none'])):
             fpos = fd['obj'].tell()
             if data['fpos'] != fpos + fd['offset']:
                 self.log.warning ("sync lost: %i -> %i", fpos, data['fpos'])
