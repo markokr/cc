@@ -55,7 +55,7 @@ class InfofileCollector(CCDaemon):
         if self.msg_suffix and not is_msg_req_valid (self.msg_suffix):
             self.log.error ("invalid msg-suffix: %s", self.msg_suffix)
             self.msg_suffix = None
-        self.use_blob = self.cf.getboolean ('use-blob', False)
+        self.use_blob = self.cf.getbool ('use-blob', True)
 
     def startup(self):
         super(InfofileCollector, self).startup()

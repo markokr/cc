@@ -64,7 +64,7 @@ class LogfileTailer (CCDaemon):
         if self.msg_suffix and not is_msg_req_valid (self.msg_suffix):
             self.log.error ("invalid msg-suffix: %s", self.msg_suffix)
             self.msg_suffix = None
-        self.use_blob = self.cf.getboolean ('use-blob', False)
+        self.use_blob = self.cf.getbool ('use-blob', True)
         self.lag_maxbytes = cc.util.hsize_to_bytes (self.cf.get ('lag-max-bytes', '0'))
 
         self.reverse_sort = False
@@ -133,10 +133,11 @@ class LogfileTailer (CCDaemon):
         while True:
             fn = files.pop()
             st = os.stat(fn)
+            lag += st.st_size
             if (fn == self.logfile):
                 break
-            lag += st.st_size
-        lag += st.st_size - self.saved_fpos
+        lag -= self.saved_fpos
+        assert lag >= 0
         return lag
 
     def get_all_filenames (self):
