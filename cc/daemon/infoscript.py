@@ -91,7 +91,8 @@ class InfoScript(CCDaemon):
             msg.req += '.' + self.msg_suffix
         self.ccpublish (msg, blob)
 
-        self.stat_inc('infoscript.bytes', len(res))
+        self.stat_inc('infoscript.bytes.read', len(res))
+        self.stat_inc('infoscript.bytes.sent', len(body))
         self.stat_inc('infoscript.count')
         self.send_stats()
 

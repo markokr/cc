@@ -96,6 +96,8 @@ class InfofileCollector(CCDaemon):
         if self.msg_suffix:
             msg.req += '.' + self.msg_suffix
         self.ccpublish (msg, blob)
+        self.stat_inc ('infosender.bytes.read', len(body))
+        self.stat_inc ('infosender.bytes.sent', len(cfb))
 
     def find_new(self):
         fnlist = glob.glob (os.path.join (self.infodir, self.infomask))

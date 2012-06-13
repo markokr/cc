@@ -17,3 +17,4 @@ class Disposer (CCHandler):
         """ Got message from client -- discard it :-) """
         self.log.trace('')
         self.stat_inc ('disposed_count')
+        self.stat_inc ('disposed_bytes', cmsg.get_size())
