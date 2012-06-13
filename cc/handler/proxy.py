@@ -21,6 +21,9 @@ class ProxyHandler(CCHandler):
 
     log = skytools.getLogger('h:ProxyHandler')
 
+    zmq_hwm = 100
+    zmq_linger = 500
+
     def __init__(self, hname, hcf, ccscript):
         super(ProxyHandler, self).__init__(hname, hcf, ccscript)
 
@@ -38,9 +41,12 @@ class ProxyHandler(CCHandler):
         pass
 
     def make_socket(self):
+        self.zmq_hwm = self.cf.getint ('zmq_hwm', self.zmq_hwm)
+        self.zmq_linger = self.cf.getint ('zmq_linger', self.zmq_linger)
         zurl = self.cf.get('remote-cc')
         s = self.zctx.socket(zmq.XREQ)
-        s.setsockopt(zmq.LINGER, 500)
+        s.setsockopt (zmq.HWM, self.zmq_hwm)
+        s.setsockopt (zmq.LINGER, self.zmq_linger)
         s.connect(zurl)
         return s
 

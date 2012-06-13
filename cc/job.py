@@ -137,9 +137,9 @@ class CCJob(skytools.DBScript):
         if not self.cc:
             url = self.cc_url
             self.cc = self.zctx.socket(zmq.XREQ)
-            self.cc.connect(url)
             self.cc.setsockopt(zmq.LINGER, self.zmq_linger)
             self.cc.setsockopt(zmq.HWM, self.zmq_hwm)
+            self.cc.connect(url)
         return self.cc
 
     def close_cc(self):

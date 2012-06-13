@@ -63,7 +63,7 @@ class InfoScript(CCDaemon):
         self.log.info('Running: %s', self.info_script)
 
         # launch command
-        p = Popen(self.info_script, close_fds=True, shell=True,
+        p = Popen(self.info_script, shell=True,
                   stdin=PIPE, stdout=PIPE, stderr=STDOUT)
         res = p.communicate()[0]
         if p.returncode != 0:
@@ -83,7 +83,7 @@ class InfoScript(CCDaemon):
             data = body.encode('base64')
             blob = None
         msg = InfofileMessage(
-                filename = self.info_name,
+                filename = self.info_name.replace('\\', '/'),
                 mtime = time.time(),
                 comp = self.compression,
                 data = data)
