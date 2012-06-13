@@ -11,6 +11,7 @@ client <-> ccserver|handler <-> handlerproc
 import errno
 import os.path
 import sys
+import time
 
 import skytools
 import zmq, zmq.eventloop
@@ -102,6 +103,10 @@ class CCServer(skytools.BaseScript):
         if self.cur_role == 'insecure':
             self.log.warning('CC is running in insecure mode, please add "cc-role = local" or "cc-role = remote" option to config')
 
+        self.stat_level = self.cf.getint ('cc-stats', 1)
+        if self.stat_level < 1:
+            self.log.warning ('CC statistics level too low: %d', self.stat_level)
+
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
         s.bind(self.local_url)
@@ -135,6 +140,9 @@ class CCServer(skytools.BaseScript):
         self.stimer.start()
 
     def send_stats(self):
+        if self.stat_level == 0:
+            return
+
         # make sure we have something to send
         self.stat_increase('count', 0)
 
@@ -154,15 +162,19 @@ class CCServer(skytools.BaseScript):
     def handle_cc_recv(self, zmsg):
         """Got message from client, pick handler."""
 
+        start = time.time()
+        self.stat_inc ('count')
         self.log.trace('got msg: %r', zmsg)
         try:
             cmsg = CCMessage(zmsg)
         except:
             self.log.exception('Invalid CC message')
+            self.stat_increase('count.invalid')
             return
 
         try:
             dst = cmsg.get_dest()
+            size = cmsg.get_size()
             route = tuple(dst.split('.'))
 
             # find and run all handlers that match
@@ -175,13 +187,25 @@ class CCServer(skytools.BaseScript):
                     cnt += 1
             if cnt == 0:
                 self.log.warning('dropping msg, no route: %s', dst)
-
-            # update stats
-            self.stat_increase('count')
-            self.stat_increase('bytes', cmsg.get_size())
+                stat = 'dropped'
+            else:
+                stat = 'ok'
 
         except Exception:
-            self.log.exception('crashed, dropping msg: %s', cmsg.get_dest())
+            self.log.exception('crashed, dropping msg: %s', dst)
+            stat = 'crashed'
+
+        # update stats
+        taken = time.time() - start
+        self.stat_inc ('bytes', size)
+        self.stat_inc ('seconds', taken)
+        self.stat_inc ('count.%s' % stat)
+        self.stat_inc ('bytes.%s' % stat, size)
+        self.stat_inc ('seconds.%s' % stat, taken)
+        if self.stat_level > 1:
+            self.stat_inc ('count.%s.msg.%s' % (stat, dst))
+            self.stat_inc ('bytes.%s.msg.%s' % (stat, dst), size)
+            self.stat_inc ('seconds.%s.msg.%s' % (stat, dst), taken)
 
     def work(self):
         """Default work loop simply runs ioloop."""
