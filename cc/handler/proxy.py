@@ -123,11 +123,11 @@ class ProxyHandler (BaseProxyHandler):
 
         rtt = echo.time_pong - msg.orig_time
         if msg.orig_time == echo.time_ping:
-            self.log.trace ("echo time: %f s", rtt)
+            self.log.trace ("echo time: %f s (%s)", rtt, self.remote_url)
         elif rtt <= 5 * self.ping_tick:
-            self.log.debug ("late pong: %f s", rtt)
+            self.log.debug ("late pong: %f s (%s)", rtt, self.remote_url)
         else:
-            self.log.info ("too late pong: %f s", rtt)
+            self.log.info ("too late pong: %f s (%s)", rtt, self.remote_url)
 
     def _send_ping (self):
         """ Send ping to remote CC. """
