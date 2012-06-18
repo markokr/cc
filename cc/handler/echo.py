@@ -34,8 +34,8 @@ class Echo (CCHandler):
     def __init__ (self, hname, hcf, ccscript):
         super(Echo, self).__init__(hname, hcf, ccscript)
 
-        self.echoes = {}
-        self.stream = {}
+        self.echoes = {} # echo stats for monitored peers
+        self.stream = {} # connections to monitored peers
 
         for url in self.cf.getlist ("ping-remotes", ""):
             sock = self._make_socket (url)

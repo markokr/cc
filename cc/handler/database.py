@@ -11,7 +11,7 @@ import time
 import skytools
 import zmq
 
-from cc.handler.proxy import ProxyHandler
+from cc.handler.proxy import BaseProxyHandler
 from cc.message import CCMessage
 from cc.reqs import parse_json
 from cc.stream import CCStream
@@ -114,7 +114,7 @@ class DBWorker(threading.Thread):
 # db proxy
 #
 
-class DBHandler(ProxyHandler):
+class DBHandler (BaseProxyHandler):
     """Send request to workers."""
 
     CC_ROLES = ['remote']

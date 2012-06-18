@@ -1,31 +1,37 @@
+"""
+Proxy -- forwards messages to/from remote CC.
+"""
 
 import skytools
 import zmq
+from zmq.eventloop.ioloop import PeriodicCallback
 
 from cc.handler import CCHandler
-from cc.message import zmsg_size
+from cc.handler.echo import EchoState
+from cc.message import CCMessage, zmsg_size
+from cc.reqs import EchoRequestMessage
 from cc.stream import CCStream
 
-__all__ = ['ProxyHandler']
+__all__ = ['ProxyHandler', 'BaseProxyHandler']
 
 CC_HANDLER = 'ProxyHandler'
 
 #
-# message proxy
+# base message proxy class
 #
 
-class ProxyHandler(CCHandler):
+class BaseProxyHandler (CCHandler):
     """Simply proxies further"""
 
     CC_ROLES = ['local', 'remote']
 
-    log = skytools.getLogger('h:ProxyHandler')
+    log = skytools.getLogger ('h:BaseProxyHandler')
 
     zmq_hwm = 100
     zmq_linger = 500
 
     def __init__(self, hname, hcf, ccscript):
-        super(ProxyHandler, self).__init__(hname, hcf, ccscript)
+        super(BaseProxyHandler, self).__init__(hname, hcf, ccscript)
 
         s = self.make_socket()
         self.stream = CCStream(s, ccscript.ioloop)
@@ -43,11 +49,11 @@ class ProxyHandler(CCHandler):
     def make_socket(self):
         self.zmq_hwm = self.cf.getint ('zmq_hwm', self.zmq_hwm)
         self.zmq_linger = self.cf.getint ('zmq_linger', self.zmq_linger)
-        zurl = self.cf.get('remote-cc')
+        self.remote_url = self.cf.get ('remote-cc')
         s = self.zctx.socket(zmq.XREQ)
         s.setsockopt (zmq.HWM, self.zmq_hwm)
         s.setsockopt (zmq.LINGER, self.zmq_linger)
-        s.connect(zurl)
+        s.connect (self.remote_url)
         return s
 
     def on_recv(self, zmsg):
@@ -64,3 +70,78 @@ class ProxyHandler(CCHandler):
         """Got message from client, send to remote CC."""
         self.log.trace('')
         self.stream.send_cmsg(cmsg)
+
+#
+# full featured message proxy
+#
+
+class ProxyHandler (BaseProxyHandler):
+    """ Simply proxies further """
+
+    log = skytools.getLogger ('h:ProxyHandler')
+
+    ping_tick = 1
+
+    def __init__ (self, hname, hcf, ccscript):
+        super(ProxyHandler, self).__init__(hname, hcf, ccscript)
+
+        self.ping_remote = self.cf.getbool ("ping", False)
+        if self.ping_remote:
+            self.echo_stats = EchoState (self.remote_url)
+            self.echo_timer = PeriodicCallback (self.ping, self.ping_tick * 1000, self.ioloop)
+            self.echo_timer.start()
+            self.log.debug ("will ping %s", self.remote_url)
+
+    def on_recv (self, zmsg):
+        """ Got message from remote CC, process it. """
+        try:
+            # pongs to our pings should come back w/o any routing info
+            if self.ping_remote and zmsg[0] == '':
+                self.log.trace ("%r", zmsg)
+                cmsg = CCMessage (zmsg)
+                req = cmsg.get_dest()
+                if req == "echo.response":
+                    self._recv_pong (cmsg)
+                else:
+                    self.log.warn ("unknown msg: %s", req)
+        except:
+            self.log.exception ("crashed")
+        finally:
+            super(ProxyHandler, self).on_recv(zmsg)
+
+    def _recv_pong (self, cmsg):
+        """ Pong received, evaluate it. """
+
+        msg = cmsg.get_payload (self.xtx)
+        if not msg: return
+
+        if msg.orig_target != self.remote_url:
+            self.log.warn ("unknown pong: %s", msg.orig_target)
+            return
+        echo = self.echo_stats
+        echo.update_pong (msg)
+
+        rtt = echo.time_pong - msg.orig_time
+        if msg.orig_time == echo.time_ping:
+            self.log.trace ("echo time: %f s", rtt)
+        elif rtt <= 5 * self.ping_tick:
+            self.log.debug ("late pong: %f s", rtt)
+        else:
+            self.log.info ("too late pong: %f s", rtt)
+
+    def _send_ping (self):
+        """ Send ping to remote CC. """
+        msg = EchoRequestMessage(
+                target = self.remote_url)
+        cmsg = self.xtx.create_cmsg (msg)
+        self.stream.send_cmsg (cmsg)
+        self.echo_stats.update_ping (msg)
+        self.log.trace ("%r", msg)
+
+    def ping (self):
+        """ Echo requesting and monitoring. """
+        self.log.trace ("")
+        echo = self.echo_stats
+        if echo.time_ping - echo.time_pong > 5 * self.ping_tick:
+            self.log.warn ("no pong from %s for %f s", self.remote_url, echo.time_ping - echo.time_pong)
+        self._send_ping ()

@@ -36,23 +36,23 @@ Simple ZMQ request-reply pattern, implemented by zmq.REP, zmq.XREP
 sockets, is to add additional blob at the start of the message
 on each hop, which contains socket id from where the message
 came from.  So on reply the message can be routed by over several
-hops, each one removes the socket id when it send it further.
+hops, each one removes the socket id when it sends it further.
 
 Empty part ('') separates such socket ids from actual body parts.
 
-CC messages uses such routing, additionally it specifies meaning
+CC message uses such routing, additionally it specifies meaning
 to following body parts:
 
-0 - message type (eg. 'pub.infofile')
+0 - message type (e.g. 'pub.infofile')
 1 - body (json)
 2 - signature (optional, can be empty)
-3 - addition data blob (optional)
+3 - additional data blob (optional)
 
 The message type is contained also in json, it is separated
 out to make routing easier.
 
 In case of signed message with blob, the blob is not signed,
-but it's hash is added into message before signing.
+but its hash is added into message before signing.
 
 Message types
 -------------
@@ -162,5 +162,3 @@ cms-decrypt:
   Key and cert name to decrypt as.  Requires $name.crt and ./private/$name.key.
   Note - service key.
   Must be paired with cms-verify-ca.
-
-

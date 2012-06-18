@@ -5,12 +5,11 @@ They need to do something with the message and *fast*:
 
 - Push into remote ZMQ socket
 - Push into local ZMQ socket to local worker processes/threads
-- Write into file?
+- Write into file? (best done async / in worker)
 
 - No time-consuming processing.
 
 It would be preferable to reduce everything to write to socket.
-
 """
 
 import sys

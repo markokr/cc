@@ -6,7 +6,7 @@ import zmq
 
 import cc.util
 from cc.handler import CCHandler
-from cc.handler.proxy import ProxyHandler
+from cc.handler.proxy import BaseProxyHandler
 from cc.message import CCMessage
 
 __all__ = ['InfoWriter']
@@ -22,7 +22,7 @@ comp_ext = {
     'bzip2': '.bz2',
     }
 
-class InfoWriter (ProxyHandler):
+class InfoWriter (BaseProxyHandler):
     """ Simply writes to files (with help from workers) """
 
     CC_ROLES = ['remote']
