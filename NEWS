@@ -1,0 +1,83 @@
+. Here we try to point out changes that may be of importance for CC users mainly.
+. CC users in this context are those who administer CC or base their products on it.
+
+. Internal changes, that are mainly of interest for CC developers, can be found in CC repo log, not here.
+
+
+* ver. 0.7.10 (2012-may-31)
+
+- Added echo (a.k.a. ping) service (handler / sender / monitor)
+- Decoupled stats sending from folder checking period in InfoSender
+- Made ZMQ parameters configurable for ProxyHandler too
+
+* ver. 0.7.9 (2012-may-23)
+
+- Various fixes (Windows, ZMQ, etc)
+
+* ver. 0.7.8 (2012-mar-31)
+
+- Added new operating mode to log tailing -- 'rotated'
+- Added support for optional msg type suffix for info & log msgs
+- Various fixes
+
+* ver. 0.7.7 (2012-feb-21)
+
+- Added file position checking into log tailing
+- Changed behaviour of cc.daemon.logtail, it can follow logs w/o skipping now.
+- Added support for other size units in config options -- B, KB, MB, GB, etc.
+- Added --config option to taskclient
+
+* ver. 0.7.6 (2012-feb-01)
+
+- Fixed upgrading issue (with Debian's CDBS)
+
+* ver. 0.7.5 (2011-dec-16)
+
+- Added compression support in LogfileTailer (cc.daemon.logtail)
+- Fixed bug where log level was not passed to CC daemons (jobs)
+- Reworked pid files for subprocesses (jobs, tasks)
+- Logging reworked, verbosity increased by multiple -v options
+- Depend on skytools >= 3.0.git.111215 to get working logging
+
+* ver. 0.7.4 (2011-dec-09)
+
+- Make ZMQ parameters configurable (defaults: zmq_nthreads=1, zmq_linger=500, zmq_hwm=50).
+- Make msg check time window configurable and disabled by default.  (cms-time-window=0)
+
+* ver. 0.7.3 (2011-dec-01)
+
+- Log tailing improved (blob support, files flushing, configuration, statistics, and more)
+- Added support for saving compressed files in TailWriter (gzip, bzip2)
+- Added blob support for InfoScript, InfoSender, InfoWriter
+- Improved blob handling (speed-up) when no crypto involved
+- Added script zstop.sh (stopping CC cleanly instead of terminating)
+- Added CC regression tests and framework
+- Added more stat counters all over CC
+- Logging reworked and cleaned up
+- Various fixes
+
+* ver. 0.7.2 (2011-nov-04)
+
+- Added preview tailer for rotated log files (cc.daemon.logtail, cc.handler.tailwriter)
+- Added handler Disposer (cc.handler.disposer)
+- Various fixes
+
+* ver. 0.7 (2011-oct-14)
+
+- Allow '*' as route pattern (meaning all messages)
+- Added client-side task manager and sample client
+- Improved Debian packaging and scripts
+- Various amendments
+
+* ver. 0.6 (2011-sep-28)
+
+- Added generic task executor (cc.daemon.taskrunner)
+- Added support for compression (gzip, bzip2) of (info)files in InfoScript, InfoSender, InfoWriter
+- Added automatic daemon restarting in JobMgr (and some config options)
+- Added support for multiple handlers per request (msgtype)
+- Added config option 'filemask' for InfoSender (cc.daemon.infosender)
+- Added config options 'route-lifetime' and 'maint-period' for TaskRouter handler
+- Fixed JobMgr message handling and made it robust (replying with proper error message)
+- Clean up of message types (requests)
+- Better logging
+- Fixes
