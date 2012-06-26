@@ -67,6 +67,7 @@ class InfoWriter (BaseProxyHandler):
 
     def stop (self):
         """ Signal workers to shut down. """
+        super(InfoWriter, self).stop()
         self.log.info ('stopping')
         for w in self.workers:
             self.log.info ("signalling %s", w.name)

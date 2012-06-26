@@ -162,6 +162,7 @@ class TaskRouter(CCHandler):
 
         self.log.debug('saved client for %r', uid)
 
+
     def send_reply (self, cmsg):
         """ Send reply message back to task requestor """
 
@@ -181,6 +182,7 @@ class TaskRouter(CCHandler):
 
         self.stat_inc ('task.reply')
 
+
     def ccreply(self, rep, creq):
         crep = self.xtx.create_cmsg(rep)
         crep.take_route(creq)
@@ -190,3 +192,8 @@ class TaskRouter(CCHandler):
         self.log.info(errmsg)
         rep = ErrorMessage(msg = errmsg)
         self.ccreply(rep, cmsg)
+
+    def stop (self):
+        super(TaskRouter, self).stop()
+        self.log.info ("stopping")
+        self.timer.stop()

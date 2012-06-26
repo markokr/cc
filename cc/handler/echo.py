@@ -132,6 +132,11 @@ class Echo (CCHandler):
                 self.log.warn ("no pong from %s for %f s", url, echo.time_ping - echo.time_pong)
             self.send_request (url)
 
+    def stop (self):
+        super(Echo, self).stop()
+        self.log.info ("stopping")
+        self.timer.stop()
+
 
 class EchoState (object):
     def __init__ (self, url):

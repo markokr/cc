@@ -145,3 +145,9 @@ class ProxyHandler (BaseProxyHandler):
         if echo.time_ping - echo.time_pong > 5 * self.ping_tick:
             self.log.warn ("no pong from %s for %f s", self.remote_url, echo.time_ping - echo.time_pong)
         self._send_ping ()
+
+    def stop (self):
+        super(ProxyHandler, self).stop()
+        self.log.info ("stopping")
+        if hasattr (self, "echo_timer"):
+            self.echo_timer.stop()

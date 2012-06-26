@@ -177,7 +177,9 @@ class TailWriter (CCHandler):
 
     def stop (self):
         """ Signal workers to shut down. """
+        super(TailWriter, self).stop()
         self.log.info ('stopping')
+        self.timer_maint.stop()
         for w in self.workers:
             self.log.info ("signalling %s", w.name)
             w.stop()

@@ -163,6 +163,7 @@ class JobMgr(CCHandler):
         return
 
     def stop(self):
+        super(JobMgr, self).stop()
         self.log.info('Stopping CC daemons')
         for j in self.jobs.values():
             self.log.debug("stopping %s", j.jname)

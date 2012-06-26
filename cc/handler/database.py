@@ -39,18 +39,20 @@ class DBWorker(threading.Thread):
         self.func_list = func_list
         self.db = None
         self.master = None
+        self.looping = True
 
     def run(self):
         self.log.debug ('%s running', self.name)
         self.master = self.zctx.socket (zmq.XREP)
         self.master.connect (self.master_url)
-        while 1:
+        while self.looping:
             try:
                 self.work()
             except:
                 self.log.exception('worker crash, dropping msg')
                 self.reset()
                 time.sleep(10)
+        self.shutdown()
 
     def reset(self):
         try:
@@ -59,6 +61,13 @@ class DBWorker(threading.Thread):
                 self.db = None
         except:
             pass
+
+    def stop (self):
+        self.looping = False
+
+    def shutdown (self):
+        self.log.info ("%s stopping", self.name)
+        self.reset()
 
     def work(self):
         zmsg = self.master.recv_multipart()
@@ -121,6 +130,10 @@ class DBHandler (BaseProxyHandler):
 
     log = skytools.getLogger('h:DBHandler')
 
+    def startup (self):
+        super(DBHandler, self).startup()
+        self.workers = []
+
     def make_socket (self):
         """ Create socket for sending msgs to workers. """
         url = 'tcp://127.0.0.1' # 'inproc://workers'
@@ -141,4 +154,13 @@ class DBHandler (BaseProxyHandler):
             w = DBWorker(
                     wname, self.xtx, self.zctx, self.worker_url,
                     connstr, func_list)
+            self.workers.append (w)
             w.start()
+
+    def stop (self):
+        """ Signal workers to shut down. """
+        super(DBHandler, self).stop()
+        self.log.info ("stopping")
+        for w in self.workers:
+            self.log.info ("signalling %s", w.name)
+            w.stop()
