@@ -13,7 +13,7 @@ url = 'tcp://127.0.0.1:10000'
 quiet = 0
 
 if len(sys.argv) < 2:
-    print 'usage: testmsg log|task|info|db|job [cc-url]'
+    print 'usage: testmsg log|task|info|db*|job [cc-url]'
     sys.exit(0)
 if len(sys.argv) > 2:
     url = sys.argv[2]
@@ -41,9 +41,19 @@ elif typ == 'task2':
 elif typ == 'log':
     msg = {'req': 'log.info', 'time': now, 'log_time': now, 'hostname': 'host', 'job_name': 'job', 'log_level': 'INFO', 'log_msg': 'Foo'}
     need_answer = False
-elif typ == 'db':
-    msg = {'req': 'db.confdb', 'time': now, 'hostname': 'hostname', 'function': 'public.test_json'}
-    msg = {'req': 'db.testdb', 'time': now, 'hostname': 'hostname', 'function': 'hots.apiwrapper', 'payload': {'req': 'tralala'}}
+elif typ.startswith('db'):
+    if typ == 'db-l':
+        payload = [json.dumps({'req': 'tralala'})]
+    elif typ == 'db-d':
+        payload = {'json_request': json.dumps({'req': 'tralala'})}
+    elif typ == 'db-jl':
+        payload = json.dumps([json.dumps({'req': 'tralala'})])
+    elif typ == 'db-jd':
+        payload = json.dumps({'json_request': json.dumps({'req': 'tralala'})})
+    if typ == 'db':
+        msg = {'req': 'db.confdb', 'time': now, 'hostname': 'hostname', 'function': 'public.test_json'} # marko's
+    else:
+        msg = {'req': 'db.testdb', 'time': now, 'hostname': 'hostname', 'function': 'hots.apiwrapper', 'payload': payload, 'return': 'json'}
 elif typ == 'job':
     msg = {'req': 'job.config', 'time': now}
     msg = {'req': 'job.config', 'time': now, 'job_name': 'qwerty'}

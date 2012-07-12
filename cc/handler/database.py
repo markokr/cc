@@ -7,13 +7,15 @@ where workers connect to and receive messages.
 
 import threading
 import time
+from types import *
 
 import skytools
 import zmq
 
+import cc.json
 from cc.handler.proxy import BaseProxyHandler
 from cc.message import CCMessage
-from cc.reqs import parse_json
+from cc.reqs import parse_json, ReplyMessage
 from cc.stream import CCStream
 
 __all__ = ['DBHandler']
@@ -91,8 +93,10 @@ class DBWorker(threading.Thread):
             return
         curs = self.db.cursor()
         func = msg.function
-        args = msg.get('payload','{}')
-        js = args.dump_json()
+        args = msg.get ('payload', [])
+        if isinstance (args, StringType):
+            args = cc.json.loads (args)
+        assert isinstance (args, (DictType, ListType, TupleType))
 
         if len(self.func_list) == 1 and self.func_list[0] == '*':
             pass
@@ -102,20 +106,32 @@ class DBWorker(threading.Thread):
             self.log.error('Function call not allowed: %r', func)
             return None
 
-        q = "select %s(%%s)" % skytools.quote_fqident(func)
+        q = "select %s (%%s)" % (skytools.quote_fqident(func),)
+        if isinstance (args, DictType):
+            q %= (", ".join(["%s := %%(%s)s" % (k,k) for k in args.keys()]),)
+        else:
+            q %= (", ".join(["%s" for a in args]),)
         if self.log.isEnabledFor (skytools.skylog.TRACE):
-            self.log.trace ('Executing: %s', curs.mogrify (q, [js]))
+            self.log.trace ('Executing: %s', curs.mogrify (q, args))
         else:
             self.log.debug ('Executing: %s', q)
-        curs.execute(q, [js])
+        curs.execute (q, args)
 
-        res = curs.fetchall()
-        if not res:
-            jsr = '{}'
-        else:
-            jsr = res[0][0]
-        jmsg = parse_json(jsr)
-        rcm = self.xtx.create_cmsg (jmsg)
+        rs = curs.fetchall()
+        rt = msg.get ('return')
+        if rt in (None, '', 'no'):
+            return
+        elif rt == 'all':
+            rep = ReplyMessage(
+                    req = "reply.%s" % msg.req,
+                    data = rs)
+        elif rt == 'json':
+            if rs:
+                jsr = rs[0][0]
+            else:
+                jsr = '{}'
+            rep = parse_json (jsr)
+        rcm = self.xtx.create_cmsg (rep)
         rcm.take_route (cmsg)
         rcm.send_to (self.master)
 
