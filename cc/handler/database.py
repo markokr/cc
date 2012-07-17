@@ -117,20 +117,31 @@ class DBWorker(threading.Thread):
             self.log.debug ('Executing: %s', q)
         curs.execute (q, args)
 
-        rs = curs.fetchall()
         rt = msg.get ('return')
         if rt in (None, '', 'no'):
             return
         elif rt == 'all':
-            rep = ReplyMessage(
-                    req = "reply.%s" % msg.req,
-                    data = rs)
+            rs = curs.fetchall()
+        elif rt == 'one':
+            rs = curs.fetchone()
         elif rt == 'json':
+            rs = curs.fetchone()
             if rs:
-                jsr = rs[0][0]
+                jsr = rs[0]
             else:
                 jsr = '{}'
             rep = parse_json (jsr)
+        if rt != 'json':
+            rep = ReplyMessage(
+                    req = "reply.%s" % msg.req,
+                    data = rs)
+            if curs.rowcount >= 0:
+                rep.rowcount = curs.rowcount
+            if curs.statusmessage:
+                rep.statusmessage = curs.statusmessage
+            if msg.get('ident'):
+                rep.ident = msg.get('ident')
+
         rcm = self.xtx.create_cmsg (rep)
         rcm.take_route (cmsg)
         rcm.send_to (self.master)
