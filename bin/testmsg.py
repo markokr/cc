@@ -43,17 +43,17 @@ elif typ == 'log':
     need_answer = False
 elif typ.startswith('db'):
     if typ == 'db-l':
-        payload = [json.dumps({'req': 'tralala'})]
+        params = [json.dumps({'req': 'tralala'})]
     elif typ == 'db-d':
-        payload = {'json_request': json.dumps({'req': 'tralala'})}
+        params = {'json_request': json.dumps({'req': 'tralala'})}
     elif typ == 'db-jl':
-        payload = json.dumps([json.dumps({'req': 'tralala'})])
+        params = json.dumps([json.dumps({'req': 'tralala'})])
     elif typ == 'db-jd':
-        payload = json.dumps({'json_request': json.dumps({'req': 'tralala'})})
+        params = json.dumps({'json_request': json.dumps({'req': 'tralala'})})
     if typ == 'db':
         msg = {'req': 'db.confdb', 'time': now, 'hostname': 'hostname', 'function': 'public.test_json'} # marko's
     else:
-        msg = {'req': 'db.testdb', 'time': now, 'hostname': 'hostname', 'function': 'hots.apiwrapper', 'payload': payload, 'return': 'json'}
+        msg = {'req': 'db.testdb', 'time': now, 'hostname': 'hostname', 'function': 'hots.apiwrapper', 'params': params, 'return': 'json'}
 elif typ == 'job':
     msg = {'req': 'job.config', 'time': now}
     msg = {'req': 'job.config', 'time': now, 'job_name': 'qwerty'}

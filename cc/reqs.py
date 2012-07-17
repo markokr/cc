@@ -42,6 +42,11 @@ class LogMessage(BaseMessage):
     log_line = Field(int)
     log_function = Field(str)
 
+class DatabaseMessage (BaseMessage):
+    req = Field (str, "db")
+    function = Field (str)
+    params = Field (str)
+
 class InfofileMessage(BaseMessage):
     req = Field(str, "pub.infofile")
     mtime = Field(float)                # last modification time of file

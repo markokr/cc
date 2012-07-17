@@ -93,7 +93,7 @@ class DBWorker(threading.Thread):
             return
         curs = self.db.cursor()
         func = msg.function
-        args = msg.get ('payload', [])
+        args = msg.get ('params', [])
         if isinstance (args, StringType):
             args = cc.json.loads (args)
         assert isinstance (args, (DictType, ListType, TupleType))

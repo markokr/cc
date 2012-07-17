@@ -14,7 +14,7 @@ import cc.json
 from cc.daemon.pg_logforward import pg_elevels_atoi
 from cc.daemon.plugins.pg_logforward import PgLogForwardPlugin
 from cc.message import is_msg_req_valid
-from cc.reqs import BaseMessage
+from cc.reqs import DatabaseMessage
 
 # log matching regexes
 
@@ -92,7 +92,7 @@ class LogWatch_ProcessErrors (PgLogForwardPlugin):
         # post message
         funcargs = [self.hostname, None, 'postgres_monitoring', data['elevel_text'], data['database'],
                 "%s %s: %s" % (data['username'], data['remotehost'], data['message'])]
-        msg = DatabaseMessage (function = 'log.add', payload = cc.json.dumps(funcargs))
+        msg = DatabaseMessage (function = 'log.add', params = cc.json.dumps(funcargs))
         if self.msg_suffix:
             msg.req += '.' + self.msg_suffix
         self.main.ccpublish(msg)
@@ -212,7 +212,7 @@ class LogWatch_HandleStats (PgLogForwardPlugin):
         funcargs = [None, self.stat_queue_name, 'dba.set_role_usage',
                 skytools.db_urlencode(dict(enumerate(confdb_funcargs)))]
 
-        msg = DatabaseMessage (function = 'pgq.insert_event', payload = cc.json.dumps(funcargs))
+        msg = DatabaseMessage (function = 'pgq.insert_event', params = cc.json.dumps(funcargs))
         if self.msg_suffix:
             msg.req += '.' + self.msg_suffix
         self.main.ccpublish(msg)
@@ -258,9 +258,3 @@ class ClientStats:
     def __str__(self):
         return "UserStat: user=%s from=%s db=%s action=%s count=%d duration=%.3f" % \
             (self.username, self.fromaddr, self.database, self.action, self.count, self.duration)
-
-
-class DatabaseMessage (BaseMessage):
-    req = cc.json.Field (str, "db")
-    function = cc.json.Field (str)
-    payload = cc.json.Field (str)
