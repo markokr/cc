@@ -30,6 +30,11 @@ class BaseProxyHandler (CCHandler):
     zmq_hwm = 100
     zmq_linger = 500
 
+    zmq_tcp_keepalive = 1
+    zmq_tcp_keepalive_intvl = 15
+    zmq_tcp_keepalive_idle = 4*60
+    zmq_tcp_keepalive_cnt = 4 # 9 on win32
+
     def __init__(self, hname, hcf, ccscript):
         super(BaseProxyHandler, self).__init__(hname, hcf, ccscript)
 
@@ -49,10 +54,22 @@ class BaseProxyHandler (CCHandler):
     def make_socket(self):
         self.zmq_hwm = self.cf.getint ('zmq_hwm', self.zmq_hwm)
         self.zmq_linger = self.cf.getint ('zmq_linger', self.zmq_linger)
+        self.zmq_tcp_keepalive = self.cf.getint ('zmq_tcp_keepalive', self.zmq_tcp_keepalive)
+        self.zmq_tcp_keepalive_intvl = self.cf.getint ('zmq_tcp_keepalive_intvl', self.zmq_tcp_keepalive_intvl)
+        self.zmq_tcp_keepalive_idle = self.cf.getint ('zmq_tcp_keepalive_idle', self.zmq_tcp_keepalive_idle)
+        self.zmq_tcp_keepalive_cnt = self.cf.getint ('zmq_tcp_keepalive_cnt', self.zmq_tcp_keepalive_cnt)
         self.remote_url = self.cf.get ('remote-cc')
         s = self.zctx.socket(zmq.XREQ)
         s.setsockopt (zmq.HWM, self.zmq_hwm)
         s.setsockopt (zmq.LINGER, self.zmq_linger)
+        if self.zmq_tcp_keepalive > 0:
+            if getattr(zmq, 'TCP_KEEPALIVE', -1) > 0:
+                s.setsockopt(zmq.TCP_KEEPALIVE, self.zmq_tcp_keepalive)
+                s.setsockopt(zmq.TCP_KEEPALIVE_INTVL, self.zmq_tcp_keepalive_intvl)
+                s.setsockopt(zmq.TCP_KEEPALIVE_IDLE, self.zmq_tcp_keepalive_idle)
+                s.setsockopt(zmq.TCP_KEEPALIVE_CNT, self.zmq_tcp_keepalive_cnt)
+            else:
+                self.log.warning("TCP_KEEPALIVE not available")
         s.connect (self.remote_url)
         return s
 
