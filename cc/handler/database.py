@@ -5,6 +5,7 @@ where workers connect to and receive messages.
 
 """
 
+import re
 import threading
 import time
 from types import *
@@ -108,6 +109,9 @@ class DBWorker(threading.Thread):
 
         q = "select %s (%%s)" % (skytools.quote_fqident(func),)
         if isinstance (args, DictType):
+            if not all ([re.match ("^[a-zA-Z0-9_]+$", k) for k in args.keys()]):
+                self.log.error ("Invalid DB function argument name in %r", args.keys())
+                return
             q %= (", ".join(["%s := %%(%s)s" % (k,k) for k in args.keys()]),)
         else:
             q %= (", ".join(["%s" for a in args]),)
