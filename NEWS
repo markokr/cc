@@ -4,6 +4,16 @@
 . Internal changes, that are mainly of interest for CC developers, can be found in CC repo log, not here.
 
 
+* ver. 0.8 (2012-jul-17)
+
+- File writers reworked to take advantage of parallelism (multithreading)
+- Added optional link monitoring to proxy handler (requires client ver. 0.7.10)
+- Added CC counterpart to Martin's pg_logforward module + example plugins
+- Improved and extended server statistic counters (configurable)
+- Added support for ZMQ's TCP keepalive (on by default if available)
+- Blobs are used by default now (requires client ver. 0.7.3)
+- Various fixes and amendments
+
 * ver. 0.7.10 (2012-may-31)
 
 - Added echo (a.k.a. ping) service (handler / sender / monitor)
