@@ -14,6 +14,8 @@ setup(
         'cc',
         'cc.handler',
         'cc.daemon',
+        'cc.daemon.plugins',
+        'cc.daemon.plugins.pg_logforward',
         'cc.task',
         'cc.test',
     ],
@@ -30,4 +32,3 @@ setup(
         ]),
     ],
 )
-
