@@ -133,7 +133,7 @@ class CCServer(skytools.BaseScript):
                 s.setsockopt(zmq.TCP_KEEPALIVE_IDLE, self.zmq_tcp_keepalive_idle)
                 s.setsockopt(zmq.TCP_KEEPALIVE_CNT, self.zmq_tcp_keepalive_cnt)
             else:
-                self.log.warning("TCP_KEEPALIVE not available")
+                self.log.info("TCP_KEEPALIVE not available")
         s.bind(self.local_url)
         self.local = CCStream(s, self.ioloop)
         self.local.on_recv(self.handle_cc_recv)
