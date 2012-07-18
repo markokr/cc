@@ -68,8 +68,6 @@ class BaseProxyHandler (CCHandler):
                 s.setsockopt(zmq.TCP_KEEPALIVE_INTVL, self.zmq_tcp_keepalive_intvl)
                 s.setsockopt(zmq.TCP_KEEPALIVE_IDLE, self.zmq_tcp_keepalive_idle)
                 s.setsockopt(zmq.TCP_KEEPALIVE_CNT, self.zmq_tcp_keepalive_cnt)
-            else:
-                self.log.warning("TCP_KEEPALIVE not available")
         s.connect (self.remote_url)
         return s
 
