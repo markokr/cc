@@ -130,7 +130,7 @@ class InfofileCollector(CCDaemon):
 
     def work (self):
         t = time.time()
-        while self.stats_period > time.time() - t:
+        while self.looping and self.stats_period > time.time() - t:
             self._work()
             self.sleep(1)
         return 1
