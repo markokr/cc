@@ -99,10 +99,15 @@ class InfoWriter_Worker (threading.Thread):
 
         self.looping = True
 
-    def run (self):
-        self.log.info ("%s running", self.name)
+    def startup (self):
         self.master = self.zctx.socket (zmq.XREP)
         self.master.connect (self.master_url)
+        self.poller = zmq.Poller()
+        self.poller.register (self.master, zmq.POLLIN)
+
+    def run (self):
+        self.log.info ("%s running", self.name)
+        self.startup()
         while self.looping:
             try:
                 self.work()
@@ -111,7 +116,11 @@ class InfoWriter_Worker (threading.Thread):
         self.shutdown()
 
     def work (self):
-        zmsg = self.master.recv_multipart()
+        socks = dict (self.poller.poll (1000))
+        if self.master in socks and socks[self.master] == zmq.POLLIN:
+            zmsg = self.master.recv_multipart()
+        else: # timeout
+            return
         try:
             cmsg = CCMessage (zmsg)
         except:

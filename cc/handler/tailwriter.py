@@ -239,12 +239,12 @@ class TailWriter_Worker (threading.Thread):
         self.shutdown()
 
     def work (self):
-        socks = dict (self.poller.poll())
+        socks = dict (self.poller.poll (1000))
         if self.dconn in socks and socks[self.dconn] == zmq.POLLIN:
             zmsg = self.dconn.recv_multipart()
         elif self.sconn in socks and socks[self.sconn] == zmq.POLLIN:
             zmsg = self.sconn.recv_multipart()
-        else: # ?
+        else: # timeout
             return
         try:
             cmsg = CCMessage (zmsg)
