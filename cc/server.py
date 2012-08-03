@@ -242,12 +242,22 @@ class CCServer(skytools.BaseScript):
                 return 1
             raise
 
+    def run (self):
+        """ Thread main loop. """
+        super(CCServer, self).run()
+        #ver = map(int, skytools.__version__.split('.'))
+        from skytools.natsort import natsort_key
+        ver = natsort_key (skytools.__version__)
+        if ver <= [3, '.', 1]:
+            self.shutdown()
+
     def stop(self):
         """Called from signal handler"""
         super(CCServer, self).stop()
         self.ioloop.stop()
 
-        # FIXME: this should be done outside signal handler
+    def shutdown (self):
+        """ Called just after exiting main loop. """
         self.log.info("Stopping CC handlers")
         for h in self.handlers.values():
             self.log.debug("stopping %s", h.hname)
