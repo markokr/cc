@@ -4,6 +4,10 @@
 . Internal changes, that are mainly of interest for CC developers, can be found in CC repo log, not here.
 
 
+* ver. 0.8.2 (2012-aug-05)
+
+- Fixes
+
 * ver. 0.8.1 (2012-jul-18)
 
 - Fixed setup
