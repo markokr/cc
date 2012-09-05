@@ -17,6 +17,7 @@ import skytools
 import zmq, zmq.eventloop
 from zmq.eventloop.ioloop import PeriodicCallback
 
+from cc import __version__
 from cc.message import CCMessage
 from cc.stream import CCStream
 from cc.handler import cc_handler_lookup
@@ -77,6 +78,8 @@ class CCServer(skytools.BaseScript):
         'logdatefmt_file_verbose': LOG.datefmt_v,
     }
 
+    __version__ = __version__
+
     zmq_nthreads = 1
     zmq_hwm = 50
     zmq_linger = 500
@@ -107,6 +110,8 @@ class CCServer(skytools.BaseScript):
         """Setup sockets and handlers."""
 
         super(CCServer, self).startup()
+
+        self.log.info ("C&C server version %s starting up..", self.__version__)
 
         self.xtx = CryptoContext(self.cf)
         self.zctx = zmq.Context(self.zmq_nthreads)
