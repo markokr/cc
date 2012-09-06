@@ -1,5 +1,7 @@
 # sourced by /etc/init.d/cc
 
+ulimit -v 1048576
+
 # set to "yes" to launch daemon
 RUN="no"
 
