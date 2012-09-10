@@ -11,6 +11,7 @@ from cc.handler.echo import EchoState
 from cc.message import CCMessage, zmsg_size
 from cc.reqs import EchoRequestMessage
 from cc.stream import CCStream
+from cc.util import hsize_to_bytes
 
 __all__ = ['ProxyHandler', 'BaseProxyHandler']
 
@@ -29,6 +30,8 @@ class BaseProxyHandler (CCHandler):
 
     zmq_hwm = 100
     zmq_linger = 500
+    zmq_rcvbuf = 0 # means no change
+    zmq_sndbuf = 0 # means no change
 
     zmq_tcp_keepalive = 1
     zmq_tcp_keepalive_intvl = 15
@@ -54,6 +57,8 @@ class BaseProxyHandler (CCHandler):
     def make_socket(self):
         self.zmq_hwm = self.cf.getint ('zmq_hwm', self.zmq_hwm)
         self.zmq_linger = self.cf.getint ('zmq_linger', self.zmq_linger)
+        self.zmq_rcvbuf = hsize_to_bytes (self.cf.get ('zmq_rcvbuf', str(self.zmq_rcvbuf)))
+        self.zmq_sndbuf = hsize_to_bytes (self.cf.get ('zmq_sndbuf', str(self.zmq_sndbuf)))
         self.zmq_tcp_keepalive = self.cf.getint ('zmq_tcp_keepalive', self.zmq_tcp_keepalive)
         self.zmq_tcp_keepalive_intvl = self.cf.getint ('zmq_tcp_keepalive_intvl', self.zmq_tcp_keepalive_intvl)
         self.zmq_tcp_keepalive_idle = self.cf.getint ('zmq_tcp_keepalive_idle', self.zmq_tcp_keepalive_idle)
@@ -62,6 +67,10 @@ class BaseProxyHandler (CCHandler):
         s = self.zctx.socket(zmq.XREQ)
         s.setsockopt (zmq.HWM, self.zmq_hwm)
         s.setsockopt (zmq.LINGER, self.zmq_linger)
+        if self.zmq_rcvbuf > 0:
+            s.setsockopt (zmq.RCVBUF, self.zmq_rcvbuf)
+        if self.zmq_sndbuf > 0:
+            s.setsockopt (zmq.SNDBUF, self.zmq_sndbuf)
         if self.zmq_tcp_keepalive > 0:
             if getattr(zmq, 'TCP_KEEPALIVE', -1) > 0:
                 s.setsockopt(zmq.TCP_KEEPALIVE, self.zmq_tcp_keepalive)

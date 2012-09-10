@@ -18,10 +18,11 @@ import zmq, zmq.eventloop
 from zmq.eventloop.ioloop import PeriodicCallback
 
 from cc import __version__
+from cc.crypto import CryptoContext
+from cc.handler import cc_handler_lookup
 from cc.message import CCMessage
 from cc.stream import CCStream
-from cc.handler import cc_handler_lookup
-from cc.crypto import CryptoContext
+from cc.util import hsize_to_bytes
 
 
 LOG = skytools.dbdict(
@@ -83,6 +84,8 @@ class CCServer(skytools.BaseScript):
     zmq_nthreads = 1
     zmq_hwm = 50
     zmq_linger = 500
+    zmq_rcvbuf = 0 # means no change
+    zmq_sndbuf = 0 # means no change
 
     zmq_tcp_keepalive = 1
     zmq_tcp_keepalive_intvl = 15
@@ -95,6 +98,8 @@ class CCServer(skytools.BaseScript):
         self.zmq_nthreads = self.cf.getint('zmq_nthreads', self.zmq_nthreads)
         self.zmq_hwm = self.cf.getint('zmq_hwm', self.zmq_hwm)
         self.zmq_linger = self.cf.getint('zmq_linger', self.zmq_linger)
+        self.zmq_rcvbuf = hsize_to_bytes (self.cf.get ('zmq_rcvbuf', str(self.zmq_rcvbuf)))
+        self.zmq_sndbuf = hsize_to_bytes (self.cf.get ('zmq_sndbuf', str(self.zmq_sndbuf)))
 
         self.zmq_tcp_keepalive = self.cf.getint ('zmq_tcp_keepalive', self.zmq_tcp_keepalive)
         self.zmq_tcp_keepalive_intvl = self.cf.getint ('zmq_tcp_keepalive_intvl', self.zmq_tcp_keepalive_intvl)
@@ -131,6 +136,10 @@ class CCServer(skytools.BaseScript):
         s = self.zctx.socket(zmq.XREP)
         s.setsockopt(zmq.LINGER, self.zmq_linger)
         s.setsockopt(zmq.HWM, self.zmq_hwm)
+        if self.zmq_rcvbuf > 0:
+            s.setsockopt (zmq.RCVBUF, self.zmq_rcvbuf)
+        if self.zmq_sndbuf > 0:
+            s.setsockopt (zmq.SNDBUF, self.zmq_sndbuf)
         if self.zmq_tcp_keepalive > 0:
             if getattr(zmq, 'TCP_KEEPALIVE', -1) > 0:
                 s.setsockopt(zmq.TCP_KEEPALIVE, self.zmq_tcp_keepalive)

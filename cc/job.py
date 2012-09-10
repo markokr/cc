@@ -14,6 +14,7 @@ from cc import json
 from cc.crypto import CryptoContext
 from cc.message import CCMessage
 from cc.reqs import BaseMessage, JobConfigRequestMessage, LogMessage
+from cc.util import hsize_to_bytes
 
 __all__ = ['CCJob', 'CCDaemon', 'CCTask']
 
@@ -55,6 +56,8 @@ class CCJob(skytools.DBScript):
     zmq_nthreads = 1
     zmq_linger = 500
     zmq_hwm = 100
+    zmq_rcvbuf = 0 # means no change
+    zmq_sndbuf = 0 # means no change
 
     def __init__(self, service_type, args):
         # no crypto for logs
@@ -125,6 +128,15 @@ class CCJob(skytools.DBScript):
         cf = super(CCJob, self).load_config()
         return cf
 
+    def reload (self):
+        super(CCJob, self).reload()
+
+        self.zmq_nthreads = self.cf.getint ('zmq_nthreads', self.zmq_nthreads)
+        self.zmq_hwm = self.cf.getint ('zmq_hwm', self.zmq_hwm)
+        self.zmq_linger = self.cf.getint ('zmq_linger', self.zmq_linger)
+        self.zmq_rcvbuf = hsize_to_bytes (self.cf.get ('zmq_rcvbuf', str(self.zmq_rcvbuf)))
+        self.zmq_sndbuf = hsize_to_bytes (self.cf.get ('zmq_sndbuf', str(self.zmq_sndbuf)))
+
     def _boot_daemon(self):
         # close ZMQ context/thread before forking to background
         self.close_cc()
@@ -139,6 +151,10 @@ class CCJob(skytools.DBScript):
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.setsockopt(zmq.LINGER, self.zmq_linger)
             self.cc.setsockopt(zmq.HWM, self.zmq_hwm)
+            if self.zmq_rcvbuf > 0:
+                s.setsockopt (zmq.RCVBUF, self.zmq_rcvbuf)
+            if self.zmq_sndbuf > 0:
+                s.setsockopt (zmq.SNDBUF, self.zmq_sndbuf)
             self.cc.connect(url)
         return self.cc
 
