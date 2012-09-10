@@ -17,8 +17,16 @@ __all__ = ['CCStream', 'CCReqStream']
 # simple wrapper around ZMQStream
 #
 
-class CCStream(ZMQStream):
-    """Add CCMessage methods to ZMQStream"""
+class CCStream (ZMQStream):
+    """
+    Adds CCMessage methods to ZMQStream as well as protection (on by default)
+    against unlimited memory (send queue) growth.
+    """
+
+    def __init__(self, socket, io_loop=None, threadsafe=False, qmaxsize=None):
+        if qmaxsize is None:
+            qmaxsize = 1000
+        super(CCStream, self).__init__(socket, io_loop, threadsafe, qmaxsize)
 
     def send_cmsg(self, cmsg):
         """Send CCMessage to socket"""
