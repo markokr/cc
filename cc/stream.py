@@ -5,11 +5,11 @@ import time
 
 import zmq
 from zmq.eventloop import IOLoop
-from zmq.eventloop.zmqstream import ZMQStream
 
 import skytools
 
 from cc.message import CCMessage
+from cc.zmqstream import ZMQStream
 
 __all__ = ['CCStream', 'CCReqStream']
 
@@ -94,7 +94,7 @@ class CCReqStream:
 
         s = zctx.socket(zmq.XREQ)
         s.setsockopt(zmq.LINGER, 500)
-        """ TODO: fix hardcoded zmq.HWM """ 
+        """ TODO: fix hardcoded zmq.HWM """
         s.setsockopt(zmq.HWM, 100)
         s.connect(cc_url)
 
