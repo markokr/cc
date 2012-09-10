@@ -10,9 +10,9 @@
 #done
 
 echo "stopping cc.daemon's"
-pkill -f -s INT cc.daemon
+pkill -INT -f cc.daemon
 echo "stopping cc.server's"
-pkill -f -s INT cc.server
+pkill -INT -f cc.server
 
 #rm -rf ./var/log ./var/run ./var/info* ./infodir/info*
 #mkdir -p var/log var/run
