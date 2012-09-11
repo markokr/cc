@@ -1,16 +1,16 @@
 """Wrapper around ZMQStream
 """
 
-import Queue
+import sys
 import time
 
 import zmq
 from zmq.eventloop import IOLoop
+from zmq.eventloop.zmqstream import ZMQStream
 
 import skytools
 
 from cc.message import CCMessage, zmsg_size
-from cc.zmqstream import ZMQStream
 
 __all__ = ['CCStream', 'CCReqStream']
 
@@ -24,20 +24,23 @@ class CCStream (ZMQStream):
     against unlimited memory (send queue) growth.
     """
 
-    def __init__(self, socket, io_loop=None, threadsafe=False, qmaxsize=None):
-        if qmaxsize is None:
-            qmaxsize = 1000
-        super(CCStream, self).__init__(socket, io_loop, threadsafe, qmaxsize)
+    def __init__ (self, *args, **kwargs):
+        self.qmaxsize = kwargs.pop ('qmaxsize', None)
+        if self.qmaxsize is None:
+            self.qmaxsize = 1000
+        elif self.qmaxsize <= 0:
+            self.qmaxsize = sys.maxsize
+        super(CCStream, self).__init__(*args, **kwargs)
         self.reset_stats()
 
     def reset_stats (self):
         self.dropped_count = 0
         self.dropped_bytes = 0
 
-    def send_multipart (self, msg, flags=0, copy=True, track=False, callback=None):
-        try:
-            super(CCStream, self).send_multipart (msg, flags, copy, track, callback)
-        except Queue.Full:
+    def send_multipart (self, msg, *args, **kwargs):
+        if self._send_queue.qsize() < self.qmaxsize:
+            super(CCStream, self).send_multipart (msg, *args, **kwargs)
+        else:
             self.dropped_count += 1
             self.dropped_bytes += zmsg_size (msg)
 
