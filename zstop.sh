@@ -9,8 +9,8 @@
 #  fi
 #done
 
-echo "stopping cc.daemon's"
-pkill -INT -f cc.daemon
+#echo "stopping cc.daemon's"
+#pkill -INT -f cc.daemon
 echo "stopping cc.server's"
 pkill -INT -f cc.server
 
