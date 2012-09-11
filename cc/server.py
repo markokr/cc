@@ -14,8 +14,8 @@ import sys
 import time
 
 import skytools
-import zmq, zmq.eventloop
-from zmq.eventloop.ioloop import PeriodicCallback
+import zmq
+from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 from cc import __version__
 from cc.crypto import CryptoContext
@@ -46,8 +46,8 @@ class CCServer(skytools.BaseScript):
 
         # zmq customization:
         #zmq_nthreads = 1
-        #zmq_hwm = 50
         #zmq_linger = 500
+        #zmq_hwm = 100
 
         #zmq_tcp_keepalive = 1
         #zmq_tcp_keepalive_intvl = 15
@@ -82,8 +82,8 @@ class CCServer(skytools.BaseScript):
     __version__ = __version__
 
     zmq_nthreads = 1
-    zmq_hwm = 50
     zmq_linger = 500
+    zmq_hwm = 100
     zmq_rcvbuf = 0 # means no change
     zmq_sndbuf = 0 # means no change
 
@@ -120,7 +120,7 @@ class CCServer(skytools.BaseScript):
 
         self.xtx = CryptoContext(self.cf)
         self.zctx = zmq.Context(self.zmq_nthreads)
-        self.ioloop = zmq.eventloop.IOLoop.instance()
+        self.ioloop = IOLoop.instance()
 
         self.local_url = self.cf.get('cc-socket')
 
@@ -149,7 +149,7 @@ class CCServer(skytools.BaseScript):
             else:
                 self.log.info("TCP_KEEPALIVE not available")
         s.bind(self.local_url)
-        self.local = CCStream(s, self.ioloop)
+        self.local = CCStream(s, self.ioloop, qmaxsize = self.zmq_hwm)
         self.local.on_recv(self.handle_cc_recv)
 
         self.handlers = {}
@@ -182,6 +182,11 @@ class CCServer(skytools.BaseScript):
 
         # make sure we have something to send
         self.stat_increase('count', 0)
+
+        if self.local.dropped_count > 0:
+            self.stat_inc ('count.dropped', self.local.dropped_count)
+            self.stat_inc ('bytes.dropped', self.local.dropped_bytes)
+            self.local.reset_stats()
 
         super(CCServer, self).send_stats()
 

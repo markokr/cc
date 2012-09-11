@@ -42,7 +42,7 @@ class BaseProxyHandler (CCHandler):
         super(BaseProxyHandler, self).__init__(hname, hcf, ccscript)
 
         s = self.make_socket()
-        self.stream = CCStream(s, ccscript.ioloop)
+        self.stream = CCStream(s, ccscript.ioloop, qmaxsize = self.zmq_hwm)
         self.stream.on_recv(self.on_recv)
 
         self.startup()

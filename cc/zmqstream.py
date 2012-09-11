@@ -27,9 +27,9 @@ from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop import stack_context
 
 try:
-    from queue import Queue, Full
+    from queue import Queue
 except ImportError:
-    from Queue import Queue, Full
+    from Queue import Queue
 
 from zmq.utils.strtypes import bytes, unicode, basestring
 
@@ -258,10 +258,7 @@ class ZMQStream(object):
         See zmq.socket.send_multipart for details.
         """
         kwargs = dict(flags=flags, copy=copy, track=track)
-        try:
-            self._send_queue.put_nowait((msg, kwargs))
-        except Full:
-            return
+        self._send_queue.put_nowait((msg, kwargs))
         callback = callback or self._send_callback
         if callback is not None:
             self.on_send(callback)

@@ -22,8 +22,8 @@ from cc.message import CCMessage
 from cc.reqs import TaskRegisterMessage, TaskReplyMessage
 from cc.stream import CCStream
 
-import zmq, zmq.eventloop
-from zmq.eventloop.ioloop import PeriodicCallback
+import zmq
+from zmq.eventloop.ioloop import IOLoop, PeriodicCallback
 
 import skytools
 
@@ -100,9 +100,9 @@ class TaskRunner(CCDaemon):
     def startup(self):
         super(TaskRunner, self).startup()
 
-        self.ioloop = zmq.eventloop.IOLoop.instance()
+        self.ioloop = IOLoop.instance()
         self.connect_cc()
-        self.ccs = CCStream(self.cc, self.ioloop)
+        self.ccs = CCStream (self.cc, self.ioloop, qmaxsize = self.zmq_hwm)
         self.ccs.on_recv(self.handle_cc_recv)
 
         self.local_id = self.cf.get('local-id', self.hostname)

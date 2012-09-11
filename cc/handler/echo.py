@@ -39,7 +39,7 @@ class Echo (CCHandler):
 
         for url in self.cf.getlist ("ping-remotes", ""):
             sock = self._make_socket (url)
-            self.stream[url] = CCStream (sock, ccscript.ioloop)
+            self.stream[url] = CCStream (sock, ccscript.ioloop, qmaxsize = self.zmq_hwm)
             self.stream[url].on_recv (self.on_recv)
             self.echoes[url] = EchoState (url)
             self.log.debug ("will ping %s", url)

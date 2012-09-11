@@ -1,6 +1,7 @@
 """Wrapper around ZMQStream
 """
 
+import Queue
 import time
 
 import zmq
@@ -8,7 +9,7 @@ from zmq.eventloop import IOLoop
 
 import skytools
 
-from cc.message import CCMessage
+from cc.message import CCMessage, zmsg_size
 from cc.zmqstream import ZMQStream
 
 __all__ = ['CCStream', 'CCReqStream']
@@ -27,6 +28,18 @@ class CCStream (ZMQStream):
         if qmaxsize is None:
             qmaxsize = 1000
         super(CCStream, self).__init__(socket, io_loop, threadsafe, qmaxsize)
+        self.reset_stats()
+
+    def reset_stats (self):
+        self.dropped_count = 0
+        self.dropped_bytes = 0
+
+    def send_multipart (self, msg, flags=0, copy=True, track=False, callback=None):
+        try:
+            super(CCStream, self).send_multipart (msg, flags, copy, track, callback)
+        except Queue.Full:
+            self.dropped_count += 1
+            self.dropped_bytes += zmsg_size (msg)
 
     def send_cmsg(self, cmsg):
         """Send CCMessage to socket"""
@@ -94,19 +107,21 @@ class CCReqStream:
 
     log = skytools.getLogger('CCReqStream')
 
+    zmq_hwm = 100
+    zmq_linger = 500
+
     def __init__(self, cc_url, xtx, ioloop=None, zctx=None):
         """Initialize stream."""
 
         zctx = zctx or zmq.Context.instance()
         ioloop = ioloop or IOLoop.instance()
 
-        s = zctx.socket(zmq.XREQ)
-        s.setsockopt(zmq.LINGER, 500)
-        """ TODO: fix hardcoded zmq.HWM """
-        s.setsockopt(zmq.HWM, 100)
-        s.connect(cc_url)
+        s = zctx.socket (zmq.XREQ)
+        s.setsockopt (zmq.HWM, self.zmq_hwm)
+        s.setsockopt (zmq.LINGER, self.zmq_linger)
+        s.connect (cc_url)
 
-        self.ccs = CCStream(s, ioloop)
+        self.ccs = CCStream(s, ioloop, qmaxsize = self.zmq_hwm)
         self.ioloop = ioloop
         self.xtx = xtx
 

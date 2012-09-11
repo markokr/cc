@@ -17,7 +17,6 @@ import cc.json
 from cc.handler.proxy import BaseProxyHandler
 from cc.message import CCMessage
 from cc.reqs import parse_json, ReplyMessage
-from cc.stream import CCStream
 
 __all__ = ['DBHandler']
 
@@ -176,7 +175,7 @@ class DBHandler (BaseProxyHandler):
 
     def make_socket (self):
         """ Create socket for sending msgs to workers. """
-        url = 'tcp://127.0.0.1' # 'inproc://workers'
+        url = 'inproc://workers'
         sock = self.zctx.socket (zmq.XREQ)
         port = sock.bind_to_random_port (url)
         self.worker_url = "%s:%d" % (url, port)
