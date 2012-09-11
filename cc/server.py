@@ -22,7 +22,7 @@ from cc.crypto import CryptoContext
 from cc.handler import cc_handler_lookup
 from cc.message import CCMessage
 from cc.stream import CCStream
-from cc.util import hsize_to_bytes
+from cc.util import hsize_to_bytes, reset_stats
 
 
 LOG = skytools.dbdict(
@@ -183,12 +183,14 @@ class CCServer(skytools.BaseScript):
         # make sure we have something to send
         self.stat_increase('count', 0)
 
-        if self.local.dropped_count > 0:
-            self.stat_inc ('count.dropped', self.local.dropped_count)
-            self.stat_inc ('bytes.dropped', self.local.dropped_bytes)
-            self.local.reset_stats()
+        # combine our stats with global stats
+        self.combine_stats (reset_stats())
 
         super(CCServer, self).send_stats()
+
+    def combine_stats (self, other):
+        for k,v in other.items():
+            self.stat_increase(k,v)
 
     def add_handler(self, rname, handler):
         """Add route to handler"""

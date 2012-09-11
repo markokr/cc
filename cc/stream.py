@@ -11,6 +11,7 @@ from zmq.eventloop.zmqstream import ZMQStream
 import skytools
 
 from cc.message import CCMessage, zmsg_size
+from cc.util import stat_inc
 
 __all__ = ['CCStream', 'CCReqStream']
 
@@ -31,18 +32,13 @@ class CCStream (ZMQStream):
         elif self.qmaxsize <= 0:
             self.qmaxsize = sys.maxsize
         super(CCStream, self).__init__(*args, **kwargs)
-        self.reset_stats()
-
-    def reset_stats (self):
-        self.dropped_count = 0
-        self.dropped_bytes = 0
 
     def send_multipart (self, msg, *args, **kwargs):
         if self._send_queue.qsize() < self.qmaxsize:
             super(CCStream, self).send_multipart (msg, *args, **kwargs)
         else:
-            self.dropped_count += 1
-            self.dropped_bytes += zmsg_size (msg)
+            stat_inc ('count.dropped', 1)
+            stat_inc ('bytes.dropped', zmsg_size (msg))
 
     def send_cmsg(self, cmsg):
         """Send CCMessage to socket"""

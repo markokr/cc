@@ -94,3 +94,25 @@ def hsize_to_bytes (input):
     units = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
     bytes = int(m.group(1)) * 1024 ** units.index(m.group(2).upper())
     return bytes
+
+
+stat_dict = {}
+
+def stat_put (key, value):
+    """ Set a stat value. """
+    global stat_dict
+    stat_dict[key] = value
+
+def stat_inc (key, increase = 1):
+    """ Increase a stat value. """
+    global stat_dict
+    try:
+        stat_dict[key] += increase
+    except KeyError:
+        stat_dict[key] = increase
+
+def reset_stats ():
+    global stat_dict
+    s = stat_dict.copy()
+    stat_dict = {}
+    return s
