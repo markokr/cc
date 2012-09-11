@@ -110,11 +110,7 @@ class CCJob(skytools.DBScript):
         cmsg.send_to (self.cc)
 
     def load_config(self):
-        """Loads and returns skytools.Config instance.
-
-        By default it uses first command-line argument as config
-        file name.  Can be overrided.
-        """
+        """ Load and return skytools.Config instance. """
 
         cf = skytools.Config('ccserver', self.args[0])
         self.cc_jobname = cf.get('job_name')
@@ -129,6 +125,7 @@ class CCJob(skytools.DBScript):
         return cf
 
     def reload (self):
+        """ Reload config. """
         super(CCJob, self).reload()
 
         self.zmq_nthreads = self.cf.getint ('zmq_nthreads', self.zmq_nthreads)
@@ -136,6 +133,8 @@ class CCJob(skytools.DBScript):
         self.zmq_linger = self.cf.getint ('zmq_linger', self.zmq_linger)
         self.zmq_rcvbuf = hsize_to_bytes (self.cf.get ('zmq_rcvbuf', str(self.zmq_rcvbuf)))
         self.zmq_sndbuf = hsize_to_bytes (self.cf.get ('zmq_sndbuf', str(self.zmq_sndbuf)))
+
+        self.close_cc()
 
     def _boot_daemon(self):
         # close ZMQ context/thread before forking to background
@@ -147,15 +146,14 @@ class CCJob(skytools.DBScript):
         if not self.zctx:
             self.zctx = zmq.Context(self.zmq_nthreads)
         if not self.cc:
-            url = self.cc_url
             self.cc = self.zctx.socket(zmq.XREQ)
             self.cc.setsockopt(zmq.LINGER, self.zmq_linger)
             self.cc.setsockopt(zmq.HWM, self.zmq_hwm)
             if self.zmq_rcvbuf > 0:
-                s.setsockopt (zmq.RCVBUF, self.zmq_rcvbuf)
+                self.cc.setsockopt (zmq.RCVBUF, self.zmq_rcvbuf)
             if self.zmq_sndbuf > 0:
-                s.setsockopt (zmq.SNDBUF, self.zmq_sndbuf)
-            self.cc.connect(url)
+                self.cc.setsockopt (zmq.SNDBUF, self.zmq_sndbuf)
+            self.cc.connect (self.cc_url)
         return self.cc
 
     def close_cc(self):

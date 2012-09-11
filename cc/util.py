@@ -113,6 +113,6 @@ def stat_inc (key, increase = 1):
 
 def reset_stats ():
     global stat_dict
-    s = stat_dict.copy()
+    s = stat_dict
     stat_dict = {}
     return s
