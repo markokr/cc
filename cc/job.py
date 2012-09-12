@@ -42,7 +42,9 @@ def make_job_defaults(main_cf, job_service_name):
     defs = {}
     defs['use_skylog'] = '0'
     defs['service_name'] = job_service_name
-    defs['job_name'] = "%s_%s" % (cc_jobname, job_service_name)
+    defs['job_name'] = "%s.%s" % (cc_jobname, job_service_name)
+    if sys.platform == 'win32':
+        defs['job_name'] = defs['job_name'].replace(':', '_')
     if main_cf.has_option('pidfile'):
         defs['pidfile'] = main_cf.cf.get('ccserver', 'pidfile', raw=True)
     return defs
