@@ -81,6 +81,8 @@ class CCServer(skytools.BaseScript):
 
     __version__ = __version__
 
+    stat_level = 1
+
     zmq_nthreads = 1
     zmq_linger = 500
     zmq_hwm = 100
@@ -190,7 +192,7 @@ class CCServer(skytools.BaseScript):
 
     def combine_stats (self, other):
         for k,v in other.items():
-            self.stat_increase(k,v)
+            self.stat_inc(k,v)
 
     def add_handler(self, rname, handler):
         """Add route to handler"""

@@ -35,7 +35,7 @@ class CCHandler(object):
         self.zctx = ccscript.zctx
         self.ioloop = ccscript.ioloop
         self.cclocal = ccscript.local
-        self.stat_inc = ccscript.stat_increase
+        self.stat_inc = ccscript.stat_inc
 
     def handle_msg(self, rmsg):
         """Process single message"""
