@@ -160,19 +160,7 @@ class CCServer(skytools.BaseScript):
         for r, hnames in rcf.cf.items('routes'):
             self.log.info ('New route: %s = %s', r, hnames)
             for hname in [hn.strip() for hn in hnames.split(',')]:
-                if hname in self.handlers:
-                    h = self.handlers[hname]
-                else:
-                    hcf = self.cf.clone(hname)
-
-                    # renamed option: plugin->handler
-                    htype = hcf.get('plugin', '?')
-                    if htype == '?':
-                        htype = hcf.get('handler')
-
-                    cls = cc_handler_lookup(htype, self.cur_role)
-                    h = cls(hname, hcf, self)
-                    self.handlers[hname] = h
+                h = self.get_handler (hname)
                 self.add_handler(r, h)
 
         self.stimer = PeriodicCallback(self.send_stats, 30*1000, self.ioloop)
@@ -193,6 +181,22 @@ class CCServer(skytools.BaseScript):
     def combine_stats (self, other):
         for k,v in other.items():
             self.stat_inc(k,v)
+
+    def get_handler (self, hname):
+        if hname in self.handlers:
+            h = self.handlers[hname]
+        else:
+            hcf = self.cf.clone(hname)
+
+            # renamed option: plugin->handler
+            htype = hcf.get('plugin', '?')
+            if htype == '?':
+                htype = hcf.get('handler')
+
+            cls = cc_handler_lookup(htype, self.cur_role)
+            h = cls(hname, hcf, self)
+            self.handlers[hname] = h
+        return h
 
     def add_handler(self, rname, handler):
         """Add route to handler"""

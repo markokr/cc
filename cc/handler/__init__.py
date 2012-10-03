@@ -51,6 +51,7 @@ class CCHandler(object):
 
 _short_names = {
     'dbhandler': 'cc.handler.database',
+    'delay': 'cc.handler.delay',
     'disposer': 'cc.handler.disposer',
     'echo': 'cc.handler.echo',
     'infowriter': 'cc.handler.infowriter',
