@@ -163,7 +163,8 @@ class CCServer(skytools.BaseScript):
                 h = self.get_handler (hname)
                 self.add_handler(r, h)
 
-        self.stimer = PeriodicCallback(self.send_stats, 30*1000, self.ioloop)
+        self.stats_period = self.cf.getint ('stats-period', 30)
+        self.stimer = PeriodicCallback (self.send_stats, self.stats_period * 1000, self.ioloop)
         self.stimer.start()
 
     def send_stats(self):
