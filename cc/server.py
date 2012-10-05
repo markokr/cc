@@ -9,9 +9,11 @@ client <-> ccserver|handler <-> handlerproc
 
 
 import errno
-import os.path
+import os
+import platform
 import sys
 import time
+from collections import deque
 
 import skytools
 import zmq
@@ -134,6 +136,16 @@ class CCServer(skytools.BaseScript):
         if self.stat_level < 1:
             self.log.warning ('CC statistics level too low: %d', self.stat_level)
 
+        self.infofile = self.cf.getfile ('infofile', '')
+        self.stats_total = {}
+        self.stats_deque_bucket = 5 # seconds
+        self.stats_deque_cursor = int (time.time() / self.stats_deque_bucket)
+        self.stats_timespans = [1*60, 5*60, 15*60] # seconds
+        assert sum ([ts % self.stats_deque_bucket for ts in self.stats_timespans]) == 0
+        self.stats_deque_window = max (self.stats_timespans) / self.stats_deque_bucket + 1
+        self.stats_deque = deque ([{} for i in range (self.stats_deque_window)],
+                                  maxlen = self.stats_deque_window)
+
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
         s.setsockopt(zmq.LINGER, self.zmq_linger)
@@ -177,11 +189,89 @@ class CCServer(skytools.BaseScript):
         # combine our stats with global stats
         self.combine_stats (reset_stats())
 
+        if self.infofile:
+            self.write_infofile()
+
         super(CCServer, self).send_stats()
 
     def combine_stats (self, other):
         for k,v in other.items():
             self.stat_inc(k,v)
+
+    def stat_increase (self, key, increase = 1):
+        super(CCServer, self).stat_increase (key, increase)
+        if not self.infofile:
+            return
+        t = time.time()
+        m = int (t / self.stats_deque_bucket)
+        while m > self.stats_deque_cursor:
+            self.stats_deque.append ({})
+            self.stats_deque_cursor += 1
+        s = self.stats_deque[-1]
+        try:
+            s[key] += increase
+        except KeyError:
+            s[key] = increase
+    stat_inc = stat_increase
+
+    def write_infofile (self):
+        """ Compute stats and write infofile. """
+
+        # print header (some general info)
+        info = []
+        info += ["name: %s" % self.job_name]
+        info += ["version: %s" % getattr(self, '__version__', '')]
+        info += ["service: %s" % self.service_name]
+        info += ["pid: %i" % os.getpid()]
+        info += ["started: %s" % getattr(self, 'started', '')]
+        info += ["status: %s" % getattr(self, 'status', '')]
+        info += ["time-consumed: %s" % ' '.join(map(str, os.times()[:4]))]
+        info += ["info-period: %s" % self.stats_period]
+        info += ["info-written: %s (%s)" % (time.time(), time.strftime("%Y-%m-%d %H:%M:%S %Z"))]
+        info += ["platform: %s" % platform.platform()]
+        info += ["python: %s" % platform.python_version()]
+        info += ["skytools: %s" % skytools.__version__]
+        info += [""]
+
+        # add latest stats to totals
+        for k, v in self.stat_dict.items():
+            try:
+                self.stats_total[k] += v
+            except KeyError:
+                self.stats_total[k] = v
+
+        # print overall stat.counters
+        info += ["[total]"]
+        for k in sorted (self.stats_total):
+            info.append ("%s: %s" % (k, self.stats_total[k]))
+        info += [""]
+
+        # print stat.counters for last period
+        info += ["[latest]"]
+        for k in sorted (self.stat_dict):
+            info.append ("%s: %s" % (k, self.stat_dict[k]))
+        info += [""]
+
+        # compute and print stats for timespans
+        for ts in self.stats_timespans:
+            assert (ts > 0) and (ts % self.stats_deque_bucket == 0)
+            slots = ts / self.stats_deque_bucket
+            total = {}
+            for i in xrange (-2, -2 - slots, -1): # ignore current
+                s = self.stats_deque[i]
+                for k, v in s.items():
+                    try:
+                        total[k] += v
+                    except KeyError:
+                        total[k] = v
+            info += ["[avg:%i]" % ts]
+            for k in sorted (total):
+                # print: counter name, counter value, avg per bucket, avg per second
+                info.append ("%s: %s %s %s" % (k, total[k], total[k] / float(slots), total[k] / float(ts)))
+            info += [""]
+
+        text = "\n".join(info)
+        skytools.write_atomic (self.infofile, text, mode="t")
 
     def get_handler (self, hname):
         if hname in self.handlers:
