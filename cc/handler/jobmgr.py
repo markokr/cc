@@ -51,7 +51,12 @@ class JobState:
     def handle_timer(self):
         if self.proc:
             self.log.debug('checking on %s (%i)', self.jname, self.proc.pid)
-            data = self.proc.stdout.read()
+            try:
+                data = self.proc.stdout.read()
+            except IOError, e:
+                if e.errno != 35: raise
+                self.log.info ('checking on %s (%i) - %s', self.jname, self.proc.pid, e)
+                return
             if data:
                 self.log.info('Job %s stdout: %r', self.jname, data)
             rc = self.proc.poll()
