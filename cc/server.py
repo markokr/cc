@@ -137,6 +137,7 @@ class CCServer(skytools.BaseScript):
             self.log.warning ('CC statistics level too low: %d', self.stat_level)
 
         self.infofile = self.cf.getfile ('infofile', '')
+        self.infofile_level = self.cf.getint ('infofile-level', 2)
         self.stats_total = {}
         self.stats_deque_bucket = 5 # seconds
         self.stats_deque_cursor = int (time.time() / self.stats_deque_bucket)
@@ -200,7 +201,7 @@ class CCServer(skytools.BaseScript):
 
     def stat_increase (self, key, increase = 1):
         super(CCServer, self).stat_increase (key, increase)
-        if not self.infofile:
+        if self.infofile_level < 3:
             return
         t = time.time()
         m = int (t / self.stats_deque_bucket)
@@ -217,58 +218,70 @@ class CCServer(skytools.BaseScript):
     def write_infofile (self):
         """ Compute stats and write infofile. """
 
-        # print header (some general info)
-        info = []
-        info += ["name: %s" % self.job_name]
-        info += ["version: %s" % getattr(self, '__version__', '')]
-        info += ["service: %s" % self.service_name]
-        info += ["pid: %i" % os.getpid()]
-        info += ["started: %s" % getattr(self, 'started', '')]
-        info += ["status: %s" % getattr(self, 'status', '')]
-        info += ["time-consumed: %s" % ' '.join(map(str, os.times()[:4]))]
-        info += ["info-period: %s" % self.stats_period]
-        info += ["info-written: %s (%s)" % (time.time(), time.strftime("%Y-%m-%d %H:%M:%S %Z"))]
-        info += ["platform: %s" % platform.platform()]
-        info += ["python: %s" % platform.python_version()]
-        info += ["skytools: %s" % skytools.__version__]
-        info += [""]
-
-        # add latest stats to totals
-        for k, v in self.stat_dict.items():
-            try:
-                self.stats_total[k] += v
-            except KeyError:
-                self.stats_total[k] = v
-
-        # print overall stat.counters
-        info += ["[total]"]
-        for k in sorted (self.stats_total):
-            info.append ("%s: %s" % (k, self.stats_total[k]))
-        info += [""]
-
-        # print stat.counters for last period
-        info += ["[latest]"]
-        for k in sorted (self.stat_dict):
-            info.append ("%s: %s" % (k, self.stat_dict[k]))
-        info += [""]
-
-        # compute and print stats for timespans
-        for ts in self.stats_timespans:
-            assert (ts > 0) and (ts % self.stats_deque_bucket == 0)
-            slots = ts / self.stats_deque_bucket
-            total = {}
-            for i in xrange (-2, -2 - slots, -1): # ignore current
-                s = self.stats_deque[i]
-                for k, v in s.items():
-                    try:
-                        total[k] += v
-                    except KeyError:
-                        total[k] = v
-            info += ["[avg:%i]" % ts]
-            for k in sorted (total):
-                # print: counter name, counter value, avg per bucket, avg per second
-                info.append ("%s: %s %s %s" % (k, total[k], total[k] / float(slots), total[k] / float(ts)))
+        def level_1 (info):
+            # print header (some general info)
+            info += ["name: %s" % self.job_name]
+            info += ["version: %s" % getattr(self, '__version__', '')]
+            info += ["service: %s" % self.service_name]
+            info += ["pid: %i" % os.getpid()]
+            info += ["started: %s" % getattr(self, 'started', '')]
+            info += ["status: %s" % getattr(self, 'status', '')]
+            info += ["time-consumed: %s" % ' '.join(map(str, os.times()[:4]))]
+            info += ["info-period: %s" % self.stats_period]
+            info += ["info-written: %s (%s)" % (time.time(), time.strftime("%Y-%m-%d %H:%M:%S %Z"))]
+            info += ["platform: %s" % platform.platform()]
+            info += ["python: %s" % platform.python_version()]
+            info += ["skytools: %s" % skytools.__version__]
             info += [""]
+
+        def level_2 (info):
+            # add latest stats to totals
+            for k, v in self.stat_dict.items():
+                try:
+                    self.stats_total[k] += v
+                except KeyError:
+                    self.stats_total[k] = v
+
+            # print overall stat.counters
+            info += ["[total]"]
+            for k in sorted (self.stats_total):
+                info.append ("%s: %s" % (k, self.stats_total[k]))
+            info += [""]
+
+            # print stat.counters for last period
+            info += ["[latest]"]
+            for k in sorted (self.stat_dict):
+                info.append ("%s: %s" % (k, self.stat_dict[k]))
+            info += [""]
+
+        def level_3 (info):
+            # compute and print stats for timespans
+            for ts in self.stats_timespans:
+                assert (ts > 0) and (ts % self.stats_deque_bucket == 0)
+                slots = ts / self.stats_deque_bucket
+                total = {}
+                for i in xrange (-2, -2 - slots, -1): # ignore current
+                    s = self.stats_deque[i]
+                    for k, v in s.items():
+                        try:
+                            total[k] += v
+                        except KeyError:
+                            total[k] = v
+                info += ["[avg:%i]" % ts]
+                for k in sorted (total):
+                    # print: counter name, counter value, avg per bucket, avg per second
+                    info.append ("%s: %s %s %s" % (k, total[k], total[k] / float(slots), total[k] / float(ts)))
+                info += [""]
+
+        info = []
+        if self.infofile_level <= 0:
+            return
+        if self.infofile_level >= 1:
+            level_1 (info)
+        if self.infofile_level >= 2:
+            level_2 (info)
+        if self.infofile_level >= 3:
+            level_3 (info)
 
         text = "\n".join(info)
         skytools.write_atomic (self.infofile, text, mode="t")
