@@ -206,9 +206,9 @@ class CCServer(skytools.BaseScript):
         t = time.time()
         m = int (t / self.stats_deque_bucket)
         while m > self.stats_deque_cursor:
-            self.stats_deque.append ({})
+            self.stats_deque.appendleft ({})
             self.stats_deque_cursor += 1
-        s = self.stats_deque[-1]
+        s = self.stats_deque[0]
         try:
             s[key] += increase
         except KeyError:
@@ -256,22 +256,23 @@ class CCServer(skytools.BaseScript):
 
         def level_3 (info):
             # compute and print stats for timespans
-            for ts in self.stats_timespans:
-                assert (ts > 0) and (ts % self.stats_deque_bucket == 0)
-                slots = ts / self.stats_deque_bucket
-                total = {}
-                for i in xrange (-2, -2 - slots, -1): # ignore current
-                    s = self.stats_deque[i]
+            total = {}
+            i = ts = 0
+            for s in self.stats_deque:
+                if i > 0: # ignore current
                     for k, v in s.items():
                         try:
                             total[k] += v
                         except KeyError:
                             total[k] = v
-                info += ["[avg:%i]" % ts]
-                for k in sorted (total):
-                    # print: counter name, counter value, avg per bucket, avg per second
-                    info.append ("%s: %s %s %s" % (k, total[k], total[k] / float(slots), total[k] / float(ts)))
-                info += [""]
+                    if ts in self.stats_timespans:
+                        info += ["[avg:%i]" % ts]
+                        for k in sorted (total):
+                            # print: counter name, counter value, avg per bucket, avg per second
+                            info.append ("%s: %s %s %s" % (k, total[k], total[k] / float(i), total[k] / float(ts)))
+                        info += [""]
+                i += 1
+                ts += self.stats_deque_bucket
 
         info = []
         if self.infofile_level <= 0:
