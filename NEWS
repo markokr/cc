@@ -4,6 +4,13 @@
 . Internal changes, that are mainly of interest for CC developers, can be found in CC repo log, not here.
 
 
+* ver. 0.8.4 (2012-oct-10)
+
+- Added support for writing .info file (info & stats about running CC & env)
+- Added handler Delay (cc.handler.delay) for delaying all received messages
+- Added config option 'stats-period' (defaults to 30s)
+- Fixes
+
 * ver. 0.8.3 (2012-sep-12)
 
 - Fixed dreaded unlimited memory growth when connection to remote peer is down

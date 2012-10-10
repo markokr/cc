@@ -5,4 +5,4 @@ import pkgloader
 pkgloader.require('skytools', '3.0')
 import skytools
 
-__version__ = '0.8.3'
+__version__ = '0.8.4'
