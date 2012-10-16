@@ -76,6 +76,11 @@ class DBWorker(threading.Thread):
         self.log.info ("%s stopping", self.name)
         self.reset()
 
+    def connect_database (self):
+        self.log.info ('connecting to database')
+        self.db = skytools.connect_database (self.connstr)
+        self.db.set_isolation_level(0)
+
     def work(self):
         socks = dict (self.poller.poll (1000))
         if self.master in socks and socks[self.master] == zmq.POLLIN:
@@ -90,9 +95,7 @@ class DBWorker(threading.Thread):
             return
 
         if not self.db:
-            self.log.info('connecting to database')
-            self.db = skytools.connect_database(self.connstr)
-            self.db.set_isolation_level(0)
+            self.connect_database()
 
         self.process_request(cmsg)
 
@@ -100,7 +103,12 @@ class DBWorker(threading.Thread):
         msg = cmsg.get_payload(self.xtx)
         if not msg:
             return
-        curs = self.db.cursor()
+        try:
+            curs = self.db.cursor()
+        except:
+            self.reset()
+            self.connect_database()
+            curs = self.db.cursor()
         func = msg.function
         args = msg.get ('params', [])
         if isinstance (args, StringType):
