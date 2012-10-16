@@ -65,9 +65,9 @@ class DBWorker(threading.Thread):
         try:
             if self.db:
                 self.db.close()
-                self.db = None
         except:
             pass
+        self.db = None
 
     def stop (self):
         self.looping = False
