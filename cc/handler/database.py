@@ -76,11 +76,6 @@ class DBWorker(threading.Thread):
         self.log.info ("%s stopping", self.name)
         self.reset()
 
-    def connect_database (self):
-        self.log.info ('connecting to database')
-        self.db = skytools.connect_database (self.connstr)
-        self.db.set_isolation_level(0)
-
     def work(self):
         socks = dict (self.poller.poll (1000))
         if self.master in socks and socks[self.master] == zmq.POLLIN:
@@ -93,22 +88,29 @@ class DBWorker(threading.Thread):
         except:
             self.log.exception ("invalid CC message")
             return
-
-        if not self.db:
-            self.connect_database()
-
         self.process_request(cmsg)
 
-    def process_request(self, cmsg):
-        msg = cmsg.get_payload(self.xtx)
-        if not msg:
-            return
+    def connect_database (self):
+        self.log.info ("connecting to database")
+        self.db = skytools.connect_database (self.connstr)
+        self.db.set_isolation_level(0)
+
+    def get_cursor (self):
+        if not self.db:
+            self.connect_database()
         try:
             curs = self.db.cursor()
         except:
             self.reset()
             self.connect_database()
             curs = self.db.cursor()
+        return curs
+
+    def process_request(self, cmsg):
+        msg = cmsg.get_payload(self.xtx)
+        if not msg:
+            return
+        curs = self.get_cursor()
         func = msg.function
         args = msg.get ('params', [])
         if isinstance (args, StringType):
