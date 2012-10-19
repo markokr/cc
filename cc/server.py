@@ -218,17 +218,22 @@ class CCServer(skytools.BaseScript):
     def write_infofile (self):
         """ Compute stats and write infofile. """
 
+        def strftime (secs):
+            if not secs: return ""
+            f = time.strftime ("%Y-%m-%d %H:%M:%S %Z", time.localtime (secs))
+            return "%s (%s)" % (secs, f)
+
         def level_1 (info):
             # print header (some general info)
             info += ["name: %s" % self.job_name]
             info += ["version: %s" % getattr(self, '__version__', '')]
             info += ["service: %s" % self.service_name]
             info += ["pid: %i" % os.getpid()]
-            info += ["started: %s" % getattr(self, 'started', '')]
+            info += ["started: %s" % strftime (getattr(self, 'started', ''))]
             info += ["status: %s" % getattr(self, 'status', '')]
             info += ["time-consumed: %s" % ' '.join(map(str, os.times()[:4]))]
             info += ["info-period: %s" % self.stats_period]
-            info += ["info-written: %s (%s)" % (time.time(), time.strftime("%Y-%m-%d %H:%M:%S %Z"))]
+            info += ["info-written: %s" % strftime (time.time())]
             info += ["platform: %s" % platform.platform()]
             info += ["python: %s" % platform.python_version()]
             info += ["skytools: %s" % skytools.__version__]
