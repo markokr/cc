@@ -238,6 +238,8 @@ class CCServer(skytools.BaseScript):
             info += ["platform: %s" % platform.platform()]
             info += ["python: %s" % platform.python_version()]
             info += ["skytools: %s" % skytools.__version__]
+            info += ["libzmq: %s" % zmq.zmq_version()]
+            info += ["pyzmq: %s" % zmq.pyzmq_version()]
             info += [""]
 
         def level_2 (info):
