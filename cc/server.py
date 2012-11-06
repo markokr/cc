@@ -138,14 +138,15 @@ class CCServer(skytools.BaseScript):
 
         self.infofile = self.cf.getfile ('infofile', '')
         self.infofile_level = self.cf.getint ('infofile-level', 2)
+        if self.infofile_level >= 3:
+            self.stats_deque_bucket = 5 # seconds
+            self.stats_deque_cursor = int (time.time() / self.stats_deque_bucket)
+            self.stats_timespans = [1*60, 5*60, 15*60] # seconds
+            assert sum ([ts % self.stats_deque_bucket for ts in self.stats_timespans]) == 0
+            self.stats_deque_window = max (self.stats_timespans) / self.stats_deque_bucket + 1
+            self.stats_deque = deque ([{} for i in range (self.stats_deque_window)],
+                                      maxlen = self.stats_deque_window)
         self.stats_total = {}
-        self.stats_deque_bucket = 5 # seconds
-        self.stats_deque_cursor = int (time.time() / self.stats_deque_bucket)
-        self.stats_timespans = [1*60, 5*60, 15*60] # seconds
-        assert sum ([ts % self.stats_deque_bucket for ts in self.stats_timespans]) == 0
-        self.stats_deque_window = max (self.stats_timespans) / self.stats_deque_bucket + 1
-        self.stats_deque = deque ([{} for i in range (self.stats_deque_window)],
-                                  maxlen = self.stats_deque_window)
 
         # initialize local listen socket
         s = self.zctx.socket(zmq.XREP)
