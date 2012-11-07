@@ -87,7 +87,7 @@ class LogWatch_ProcessErrors (PgLogForwardPlugin):
         if not data['database']:
             data['database'] = 'postgres'
 
-        self.log.trace ('error_msg: %s' % data)
+        self.log.trace ('error_msg: %s', data)
 
         # post message
         funcargs = [self.hostname, None, 'postgres_monitoring', data['elevel_text'], data['database'],
