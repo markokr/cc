@@ -4,6 +4,10 @@
 . Internal changes, that are mainly of interest for CC developers, can be found in CC repo log, not here.
 
 
+* ver. 0.8.5 (2012-nov-08)
+
+- Fixes and amendments
+
 * ver. 0.8.4 (2012-oct-10)
 
 - Added support for writing .info file (info & stats about running CC & env)
