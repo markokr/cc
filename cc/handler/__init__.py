@@ -54,6 +54,7 @@ _short_names = {
     'delay': 'cc.handler.delay',
     'disposer': 'cc.handler.disposer',
     'echo': 'cc.handler.echo',
+    'filter': 'cc.handler.filter',
     'infowriter': 'cc.handler.infowriter',
     'jobmgr': 'cc.handler.jobmgr',
     'locallogger': 'cc.handler.locallogger',
