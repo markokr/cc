@@ -24,7 +24,7 @@ from cc.crypto import CryptoContext
 from cc.handler import cc_handler_lookup
 from cc.message import CCMessage
 from cc.stream import CCStream
-from cc.util import hsize_to_bytes, reset_stats
+from cc.util import hsize_to_bytes, reset_stats, write_atomic
 
 
 LOG = skytools.dbdict(
@@ -293,7 +293,7 @@ class CCServer(skytools.BaseScript):
             level_3 (info)
 
         text = "\n".join(info)
-        skytools.write_atomic (self.infofile, text, mode="t")
+        write_atomic (self.infofile, text, mode="t")
 
     def get_handler (self, hname):
         if hname in self.handlers:

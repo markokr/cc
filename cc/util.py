@@ -17,7 +17,7 @@ __all__ = ['write_atomic', 'compress', 'decompress', 'hsize_to_bytes']
 def write_atomic (fn, data, bakext = None, mode = 'b'):
     """Write [text] file with rename."""
 
-    if mode not in ['', 'b']:
+    if mode not in ['', 'b', 't']:
         raise ValueError ("unsupported fopen mode")
 
     # write new data to tmp file
@@ -29,7 +29,7 @@ def write_atomic (fn, data, bakext = None, mode = 'b'):
     # link old data to bak file
     if bakext:
         if bakext.find('/') >= 0:
-            raise Exception ("invalid bakext")
+            raise ValueError ("invalid bakext")
         fnb = fn + bakext
         try:
             os.unlink(fnb)
