@@ -1,12 +1,9 @@
 *~
 .DS_Store
 
-cc/*.pyc
-cc/handler/*.pyc
-cc/daemon/*.pyc
-cc/task/*.pyc
-cc/test/*.pyc
+*.pyc
 keys/*.crt
 keys/*.key
+regtest/
 
 var
