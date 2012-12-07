@@ -147,7 +147,7 @@ class InfofileCollector(CCDaemon):
         current = glob.glob (os.path.join (self.infodir, self.infomask))
         removed = set(self.infomap) - set(current)
         for fn in removed:
-            self.log.info ("forgetting file %s", fn)
+            self.log.debug ("forgetting file %s", fn)
             del self.infomap[fn]
         self.maint_timer = threading.Timer (self.maint_period, self.do_maint)
         self.maint_timer.start()
