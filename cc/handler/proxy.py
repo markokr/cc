@@ -168,12 +168,6 @@ class ProxyHandler (BaseProxyHandler):
         miss = self.echo_stats.time_ping - self.echo_stats.time_pong
         if miss > 5 * self.ping_tick:
             self.log.warn ("no pong from %s for %f s", self.remote_url, miss)
-            if miss > 10 * self.ping_tick:
-                self.log.info ("reconnecting")
-                self.stream.close()
-                s = self.make_socket()
-                self.stream = CCStream(s, self.ioloop, qmaxsize = self.zmq_hwm)
-                self.stream.on_recv(self.on_recv)
         self._send_ping ()
 
     def stop (self):
