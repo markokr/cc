@@ -98,15 +98,19 @@ class LogfileTailer (CCDaemon):
         self.bufsize = 0
         self.bufseek = None
         self.saved_fpos = None
+        self.save_file = None
         self.logf_dev = self.logf_ino = None
 
+        sfn = self.get_save_filename()
         try:
-            sfn = self.get_save_filename()
             with open (sfn, "r") as f:
                 s = f.readline().split('\t', 1)
-                self.logfile = s[1].strip()
-                self.saved_fpos = int(s[0])
-                self.log.info ("found saved state for %s", self.logfile)
+                try:
+                    self.logfile = s[1].strip()
+                    self.saved_fpos = int(s[0])
+                    self.log.info ("found saved state for %s", self.logfile)
+                except:
+                    self.logfile = self.saved_fpos = None
 
             if self.op_mode == 'rotated':
                 self.log.info ("cannot use saved state in this operation mode")
@@ -121,9 +125,9 @@ class LogfileTailer (CCDaemon):
             else:
                 self.log.warning ("cannot determine lag, skipping")
                 self.logfile = self.saved_fpos = None
-            os.unlink (sfn)
         except IOError:
             pass
+        self.save_file = open (sfn, "a")
 
     def count_lag_bytes (self):
         files = self.get_all_filenames()
@@ -173,6 +177,11 @@ class LogfileTailer (CCDaemon):
     def get_save_filename (self):
         """ Return the name of save file """
         return os.path.splitext(self.pidfile)[0] + ".save"
+
+    def save_file_pos (self):
+        self.save_file.truncate (0)
+        self.save_file.write ("%i\t%s" % (self.bufseek, self.logfile))
+        self.log.debug ("saved offset %i for %s", self.bufseek, self.logfile)
 
     def is_new_file_available (self):
         if self.op_mode in (None, '', 'classic'):
@@ -294,6 +303,7 @@ class LogfileTailer (CCDaemon):
         self.buffer = []
         self.bufsize = 0
         assert self.bufseek == self.logfpos
+        self.save_file_pos()
 
     def work (self):
         self.connect_cc()
@@ -307,10 +317,6 @@ class LogfileTailer (CCDaemon):
     def stop (self):
         super(LogfileTailer, self).stop()
         self.log.info ("stopping")
-        if self.logf:
-            with open (self.get_save_filename(), "w") as f:
-                print >> f, "%i\t%s" % (self.bufseek, self.logfile)
-                self.log.info ("saved offset %i for %s", self.bufseek, self.logfile)
 
 
 if __name__ == '__main__':
