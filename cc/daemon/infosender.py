@@ -116,6 +116,7 @@ class InfofileCollector(CCDaemon):
                 old = self.infomap[fn]
                 if old.check_send(st):
                     newlist.append(old)
+        self.log.debug ("files found - all: %i, new: %i", len(fnlist), len(newlist))
         return newlist
 
     def _work (self):
@@ -143,12 +144,13 @@ class InfofileCollector(CCDaemon):
 
     def do_maint (self):
         """ Drop removed files from our cache """
-        self.log.debug ("cleanup")
+        self.log.info ("cleanup")
         current = glob.glob (os.path.join (self.infodir, self.infomask))
         removed = set(self.infomap) - set(current)
         for fn in removed:
             self.log.debug ("forgetting file %s", fn)
             del self.infomap[fn]
+        self.log.info ("current: %i, removed: %i", len(current), len(removed))
         self.maint_timer = threading.Timer (self.maint_period, self.do_maint)
         self.maint_timer.start()
 
