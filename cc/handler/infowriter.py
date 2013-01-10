@@ -1,3 +1,4 @@
+import errno
 import os, os.path
 import threading
 
@@ -36,7 +37,12 @@ class InfoWriter (BaseProxyHandler):
         self.wparams = {} # passed to workers
 
         self.wparams['dstdir'] = self.cf.getfile ('dstdir')
-        self.wparams['host_subdirs'] = self.cf.getbool ('host-subdirs', 0)
+        self.wparams['dstmask'] = self.cf.get ('dstmask', '')
+        if self.wparams['dstmask'] == '': # legacy
+            if self.cf.getbool ('host-subdirs', 0):
+                self.wparams['dstmask'] = '%(hostname)s/%(filename)s'
+            else:
+                self.wparams['dstmask'] = '%(hostname)s--%(filename)s'
         self.wparams['bakext'] = self.cf.get ('bakext', '')
         self.wparams['write_compressed'] = self.cf.get ('write-compressed', '')
         assert self.wparams['write_compressed'] in [None, '', 'no', 'keep', 'yes']
@@ -136,11 +142,10 @@ class InfoWriter_Worker (threading.Thread):
 
         mtime = data['mtime']
         mode = data['mode']
-        host = data['hostname']
-        fn = os.path.basename(data['filename'])
+        host = data['hostname'].replace('/', '_')
+        fn = data['filename'].replace('\\', '/')
 
         # sanitize
-        host = host.replace('/', '_')
         if mode not in ['', 'b']:
             self.log.warning ("unsupported fopen mode (%r), ignoring it", mode)
             mode = 'b'
@@ -153,13 +158,19 @@ class InfoWriter_Worker (threading.Thread):
             fn += comp_ext[self.compression]
 
         # decide destination file
-        if self.host_subdirs:
-            subdir = os.path.join(self.dstdir, host)
-            dstfn = os.path.join(subdir, fn)
-            if not os.path.isdir(subdir):
-                os.mkdir(subdir)
-        else:
-            dstfn = os.path.join(self.dstdir, '%s--%s' % (host, fn))
+        dstfn = os.path.normpath (os.path.join (self.dstdir, self.dstmask % {
+                'hostname': host,
+                'filepath': fn,
+                'filename': os.path.basename(fn)}))
+        if self.dstdir != os.path.commonprefix ([self.dstdir, dstfn]):
+            self.log.warn ("suspicious file path: %r", dstfn)
+        subdir = os.path.dirname (dstfn)
+        if not os.path.isdir (subdir):
+            try:
+                os.makedirs (subdir)
+            except OSError, e:
+                if e.errno != errno.EEXIST:
+                    raise
 
         # check if file exists and is older
         try:

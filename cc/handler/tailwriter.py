@@ -1,4 +1,5 @@
 import datetime
+import errno
 import os
 import threading
 import time
@@ -67,7 +68,12 @@ class TailWriter (CCHandler):
         self.wparams = {} # passed to workers
 
         self.wparams['dstdir'] = self.cf.getfile ('dstdir')
-        self.wparams['host_subdirs'] = self.cf.getbool ('host-subdirs', 0)
+        self.wparams['dstmask'] = self.cf.get ('dstmask', '')
+        if self.wparams['dstmask'] == '': # legacy
+            if self.cf.getbool ('host-subdirs', 0):
+                self.wparams['dstmask'] = '%(hostname)s/%(filename)s'
+            else:
+                self.wparams['dstmask'] = '%(hostname)s--%(filename)s'
         self.wparams['maint_period'] = self.cf.getint ('maint-period', 3)
         self.wparams['write_compressed'] = self.cf.get ('write-compressed', '')
         assert self.wparams['write_compressed'] in [None, '', 'no', 'keep', 'yes']
@@ -260,8 +266,8 @@ class TailWriter_Worker (threading.Thread):
         if not data: return
 
         mode = data['mode']
-        host = data['hostname']
-        fn = os.path.basename (data['filename'])
+        host = data['hostname'].replace('/', '_')
+        fn = data['filename'].replace('\\', '/')
         op_mode = data.get('op_mode')
         st_dev = data.get('st_dev')
         st_ino = data.get('st_ino')
@@ -270,7 +276,6 @@ class TailWriter_Worker (threading.Thread):
         self._send_ack (host, st_dev, st_ino, data['filename'], data.get('fpos'))
 
         # sanitize
-        host = host.replace ('/', '_')
         if mode not in ['', 'b']:
             self.log.warning ("unsupported fopen mode (%r), ignoring it", mode)
             mode = 'b'
@@ -297,13 +302,19 @@ class TailWriter_Worker (threading.Thread):
                 return
         else:
             # decide destination file
-            if self.host_subdirs:
-                subdir = os.path.join (self.dstdir, host)
-                dstfn = os.path.join (subdir, fn)
-                if not os.path.isdir (subdir):
-                    os.mkdir (subdir)
-            else:
-                dstfn = os.path.join (self.dstdir, '%s--%s' % (host, fn))
+            dstfn = os.path.normpath (os.path.join (self.dstdir, self.dstmask % {
+                    'hostname': host,
+                    'filepath': fn,
+                    'filename': os.path.basename(fn)}))
+            if self.dstdir != os.path.commonprefix ([self.dstdir, dstfn]):
+                self.log.warn ("suspicious file path: %r", dstfn)
+            subdir = os.path.dirname (dstfn)
+            if not os.path.isdir (subdir):
+                try:
+                    os.makedirs (subdir)
+                except OSError, e:
+                    if e.errno != errno.EEXIST:
+                        raise
             if op_mode == 'rotated':
                 dt = datetime.datetime.today()
                 dstfn += dt.strftime (DATETIME_SUFFIX)
