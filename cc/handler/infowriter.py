@@ -163,7 +163,8 @@ class InfoWriter_Worker (threading.Thread):
                 'filepath': fn,
                 'filename': os.path.basename(fn)}))
         if self.dstdir != os.path.commonprefix ([self.dstdir, dstfn]):
-            self.log.warn ("suspicious file path: %r", dstfn)
+            self.log.error ("suspicious file path, skipping %r", dstfn)
+            return
         subdir = os.path.dirname (dstfn)
         if not os.path.isdir (subdir):
             try:
