@@ -48,6 +48,10 @@ class LogfileTailer (CCDaemon):
         if self.op_mode not in (None, '', 'classic', 'rotated'):
             self.log.error ("unknown operation-mode: %s", self.op_mode)
 
+        self.file_mode = self.cf.get ('file-mode', '')
+        if self.file_mode not in (None, '', 'text', 'binary'):
+            self.log.error ("unknown file-mode: %s", self.file_mode)
+
         self.logdir = self.cf.getfile ('logdir')
         if self.op_mode in (None, '', 'classic'):
             self.logmask = self.cf.get ('logmask')
@@ -235,7 +239,10 @@ class LogfileTailer (CCDaemon):
                 self.log.info ("started at file position %i", self.logfpos)
                 self.first = False
 
-            line = self.logf.readline()
+            if self.file_mode == 'binary':
+                line = self.logf.read (self.buf_maxbytes)
+            else:
+                line = self.logf.readline()
             if line:
                 s = len(line)
                 self.logfpos += s
