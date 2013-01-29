@@ -18,6 +18,7 @@ In rotated mode:
 
 from __future__ import with_statement
 
+import cStringIO
 import glob
 import os
 import re
@@ -94,8 +95,8 @@ class LogfileTailer (CCDaemon):
         self.first = True
         self.tailed_files = 0
         self.tailed_bytes = 0
-        self.buffer = []
-        self.bufsize = 0
+        self.buffer = cStringIO.StringIO()
+        self.buflines = 0
         self.bufseek = None
         self.saved_fpos = None
         self.save_file = None
@@ -195,7 +196,7 @@ class LogfileTailer (CCDaemon):
     def try_open_file (self, name):
         """ Try open log file; sleep a bit if unavailable. """
         if name:
-            assert self.buffer == [] and self.bufsize == 0
+            assert self.buffer.tell() == 0
             try:
                 self.logf = open (name, 'rb')
                 self.logfile = name
@@ -239,10 +240,10 @@ class LogfileTailer (CCDaemon):
                 s = len(line)
                 self.logfpos += s
                 self.tailed_bytes += s
-                self.buffer.append(line)
-                self.bufsize += s
-                if (self.buf_maxbytes is not None and self.bufsize >= self.buf_maxbytes) or \
-                        (self.buf_maxlines is not None and len(self.buffer) >= self.buf_maxlines):
+                self.buffer.write(line)
+                self.buflines += 1
+                if ((self.buf_maxbytes is not None and self.buffer.tell() >= self.buf_maxbytes) or
+                        (self.buf_maxlines is not None and self.buflines >= self.buf_maxlines)):
                     self.send_frag()
                 if self.probesleft < self.PROBESLEFT:
                     self.log.info ("DEBUG: new data in old log (!)")
@@ -251,7 +252,7 @@ class LogfileTailer (CCDaemon):
             # reset EOF condition for next attempt
             self.logf.seek (0, os.SEEK_CUR)
 
-            if self.bufsize > 0 and self.compression in (None, '', 'none'):
+            if self.buffer.tell() > 0 and self.compression in (None, '', 'none'):
                 self.send_frag()
             elif self.is_new_file_available():
                 if self.probesleft <= 0:
@@ -268,15 +269,16 @@ class LogfileTailer (CCDaemon):
                 time.sleep (0.1)
 
     def send_frag (self):
-        if self.bufsize == 0:
+        bufsize = self.buffer.tell()
+        if bufsize == 0:
             return
         start = time.time()
         if self.compression in (None, '', 'none'):
-            buf = ''.join(self.buffer)
+            buf = self.buffer.getvalue()
         else:
-            buf = cc.util.compress (''.join(self.buffer), self.compression,
+            buf = cc.util.compress (self.buffer.getvalue(), self.compression,
                                     {'level': self.compression_level})
-            self.log.debug ("compressed from %i to %i", self.bufsize, len(buf))
+            self.log.debug ("compressed from %i to %i", bufsize, len(buf))
         if self.use_blob:
             data = ''
             blob = buf
@@ -298,10 +300,10 @@ class LogfileTailer (CCDaemon):
         self.log.debug ("sent %i bytes in %f s", len(buf), elapsed)
         self.stat_inc ('duration', elapsed) # json/base64/compress time, actual send happens async
         self.stat_inc ('count')
-        self.stat_inc ('tailed_bytes', self.bufsize)
-        self.bufseek += self.bufsize
-        self.buffer = []
-        self.bufsize = 0
+        self.stat_inc ('tailed_bytes', bufsize)
+        self.bufseek += bufsize
+        self.buffer.truncate(0)
+        self.buflines = 0
         assert self.bufseek == self.logfpos
         self.save_file_pos()
 
