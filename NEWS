@@ -4,6 +4,12 @@
 . Internal changes, that are mainly of interest for CC developers, can be found in CC repo log, not here.
 
 
+* ver. 0.8.7 (2013-feb-01)
+
+- Reduced CPU and memory load of cc.daemon.logtail (LogfileTailer)
+- Added explicit support for binary files in cc.daemon.logtail (can be used with text logs too)
+- Improved InfoWriter & TailWriter (more configurable and robust)
+
 * ver. 0.8.6 (2013-jan-09)
 
 - Added cc.handler.filter for selective dropping of messages
